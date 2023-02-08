@@ -1,6 +1,7 @@
 package eu.infolead.jtk.fp;
 
 import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * This class explicitly indicates that any variable, method argument or
@@ -12,7 +13,8 @@ import java.util.Objects;
  *
  * <p>
  * In Java, by default, any reference may be {@code null}. Using this container
- * class, the intent of the developer to never manipulate a reference that may
+ * class communicates the intent of the developer to never manipulate a
+ * reference that may
  * be {@code null}.
  * </p>
  *

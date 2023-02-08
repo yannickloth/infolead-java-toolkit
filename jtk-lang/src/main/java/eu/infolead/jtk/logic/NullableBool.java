@@ -1,19 +1,35 @@
-package eu.infolead.jtk.fp;
+package eu.infolead.jtk.logic;
 
 import java.io.Serializable;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import eu.infolead.jtk.fp.NullableBool.False;
-import eu.infolead.jtk.fp.NullableBool.Null;
-import eu.infolead.jtk.fp.NullableBool.True;
 import eu.infolead.jtk.lang.SonarLintWarning;
+import eu.infolead.jtk.logic.NullableBool.False;
+import eu.infolead.jtk.logic.NullableBool.Null;
+import eu.infolead.jtk.logic.NullableBool.True;
 import jakarta.annotation.Nullable;
 
+/**
+ * This represents a three-valued boolean, which accepts the values
+ * {@link NullableBool.True}, {@link NullableBool.False} and
+ * {@link NullableBool.Null}.
+ * <h3>Notes</h3>
+ * <ol>
+ * <li>The API of this class SHOULD always consume and return boxed
+ * {@link Boolean} instances instead of unboxed {@code boolean} instances: only
+ * the boxed ones are able to represent the three states {@link Boolean#TRUE},
+ * {@link Boolean#FALSE} and {@code null}.</li>
+ * </ol>
+ */
 public abstract sealed class NullableBool implements Serializable permits True, False, Null {
     static final True TRUE = new True();
     static final False FALSE = new False();
     static final Null NULL = new Null();
+
+    public static NullableBool of(final Bool bool) {
+        return bool.fold(() -> NullableBool.FALSE, () -> NullableBool.TRUE);
+    }
 
     public abstract NullableBool apply(Runnable falseAction, Runnable nullAction, Runnable trueAction);
 
@@ -102,6 +118,7 @@ public abstract sealed class NullableBool implements Serializable permits True, 
 
         @Override
         @Nullable
+        @SuppressWarnings(SonarLintWarning.JAVA_S2447)
         public Boolean toBoolean() {
             return null;
         }

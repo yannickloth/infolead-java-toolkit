@@ -1,60 +1,31 @@
-package eu.infolead.jtk.fp;
+package eu.infolead.jtk.logic;
+
+import static eu.infolead.jtk.lang.SonarLintWarning.JAVA_S1172;
 
 import java.io.Serializable;
-import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import eu.infolead.jtk.lang.SonarLintWarning;
-import jakarta.annotation.Nonnull;
-
 /**
- * This class captures explicitly that {@link Boolean} has three possible
- * states: {@code true}, {@code false} and {@code null}.
+ * Represents the classical two-valued boolean, which may have the value
+ * {@link Bool#TRUE} or {@link Bool#False}.
+ * 
+ * <h3>Notes</h3>
+ * <ol>
+ * <li>The API of this class SHOULD always consume and return unboxed
+ * {@code boolean} instances instead of boxed
+ * {@link Boolean} instances: only
+ * the unboxed ones have only two possible values like instances of this class.
+ * The boxed ones have the
+ * third possible value {@code null}, and the classical two-valued logic does
+ * not define how to handle {@code null}.</li>
+ * <li>As a consequence of the preceding discussion/point, the API of this class
+ * MUST never allow {@code null} as an argument or a return value.</li>
+ * </ol>
  */
 public abstract sealed class Bool implements Serializable {
     public static final Bool TRUE = new True();
     public static final Bool FALSE = new False();
-
-    /**
-     * This method creates a {@link NullableBool}, and captures that the specified
-     * value may be {@code null} and that this value is valid and expected.
-     * 
-     * @param value
-     * @return
-     */
-    public static NullableBool ofNullable(final Boolean value) {
-        if (value == null) {
-            return NullableBool.NULL;
-        } else if (value) {
-            return NullableBool.TRUE;
-        } else {
-            return NullableBool.FALSE;
-        }
-    }
-
-    /**
-     * 
-     * @param valueSupplier the supplier of Boolean. Note: do not use
-     *                      {@link BooleanSupplier} here, as it won't return
-     *                      {@code null} (it only returns the boolean primitive) and
-     *                      we need {@code null} as a possible value.
-     * @return
-     */
-    @SuppressWarnings(SonarLintWarning.JAVA_S4276)
-    public static NullableBool ofNullable(final Supplier<Boolean> valueSupplier) {
-        return Bool.ofNullable(valueSupplier.get());
-    }
-
-    public static Bool of(@Nonnull final Boolean value) {
-        if (value == null) {
-            throw new IllegalArgumentException("The specified Boolean must not be null.");
-        } else if (value) {
-            return TRUE;
-        } else {
-            return FALSE;
-        }
-    }
 
     public static Bool of(final boolean value) {
         return value ? TRUE : FALSE;
@@ -62,18 +33,6 @@ public abstract sealed class Bool implements Serializable {
 
     public static Bool of(final Bool value) {
         return value;
-    }
-
-    public final Bool and(final Bool bool) {
-        return Bool.of(toBoolean() && bool.toBoolean());
-    }
-
-    public final Bool or(final Bool bool) {
-        return Bool.of(toBoolean() || bool.toBoolean());
-    }
-
-    public final Bool xor(final Bool bool) {
-        return Bool.of(toBoolean() ^ bool.toBoolean());
     }
 
     public final Bool negate() {
@@ -84,40 +43,40 @@ public abstract sealed class Bool implements Serializable {
         return b.negate();
     }
 
+    public abstract Bool and(Bool bool);
+
     public final Bool and(final boolean bool) {
-        return Bool.of(toBoolean() && bool);
+        return and(Bool.of(bool));
     }
+
+    public abstract Bool or(Bool bool);
 
     public final Bool or(final boolean bool) {
-        return Bool.of(toBoolean() || bool);
+        return or(Bool.of(bool));
     }
+
+    public abstract Bool xor(Bool bool);
 
     public final Bool xor(final boolean bool) {
-        return Bool.of(toBoolean() ^ bool);
+        return xor(Bool.of(bool));
     }
 
-    public final Bool and(final Boolean bool) {
-        return Bool.of(toBoolean() && bool);
+    @SuppressWarnings(JAVA_S1172)
+    public static <T> Bool toTrue(final T value) {
+        return Bool.TRUE;
     }
 
-    public final Bool or(final Boolean bool) {
-        return Bool.of(toBoolean() || bool);
+    public static Bool toTrue() {
+        return Bool.TRUE;
     }
 
-    public final Bool xor(final Boolean bool) {
-        return Bool.of(toBoolean() ^ bool);
+    @SuppressWarnings(JAVA_S1172)
+    public static <T> Bool toFalse(final T value) {
+        return Bool.FALSE;
     }
 
-    public final Bool and(final NullableBool bool) {
-        return Bool.of(toBoolean() && bool.toBoolean());
-    }
-
-    public final Bool or(final NullableBool bool) {
-        return Bool.of(toBoolean() || bool.toBoolean());
-    }
-
-    public final Bool xor(final NullableBool bool) {
-        return Bool.of(toBoolean() ^ bool.toBoolean());
+    public static Bool toFalse() {
+        return Bool.FALSE;
     }
 
     public abstract <R> R fold(Supplier<R> falseSupplier, Supplier<R> trueSupplier);
@@ -137,6 +96,20 @@ public abstract sealed class Bool implements Serializable {
     public abstract boolean toBoolean();
 
     static final class True extends Bool {
+        @Override
+        public Bool and(final Bool bool) {
+            return bool;
+        }
+
+        @Override
+        public Bool or(final Bool bool) {
+            return this;
+        }
+
+        @Override
+        public Bool xor(final Bool bool) {
+            return bool.fold(() -> Bool.TRUE, () -> Bool.FALSE);
+        }
 
         @Override
         public boolean toBoolean() {
@@ -156,6 +129,7 @@ public abstract sealed class Bool implements Serializable {
 
         @Override
         public Bool ifFalse(final Consumer<Bool> falseConsumer) {
+            // do nothing
             return this;
         }
 
@@ -184,6 +158,20 @@ public abstract sealed class Bool implements Serializable {
     }
 
     static final class False extends Bool {
+        @Override
+        public Bool and(final Bool bool) {
+            return this;
+        }
+
+        @Override
+        public Bool or(final Bool bool) {
+            return bool;
+        }
+
+        @Override
+        public Bool xor(final Bool bool) {
+            return bool.fold(() -> Bool.FALSE, () -> Bool.TRUE);
+        }
 
         @Override
         public boolean toBoolean() {
@@ -198,6 +186,7 @@ public abstract sealed class Bool implements Serializable {
 
         @Override
         public Bool ifTrue(final Runnable trueAction) {
+            // do nothing
             return this;
         }
 

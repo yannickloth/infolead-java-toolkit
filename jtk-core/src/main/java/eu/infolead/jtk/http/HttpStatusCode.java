@@ -2,8 +2,8 @@ package eu.infolead.jtk.http;
 
 import java.util.Objects;
 
-import eu.infolead.jtk.fp.Bool;
 import eu.infolead.jtk.fp.Maybe;
+import eu.infolead.jtk.logic.Bool;
 import eu.infolead.jtk.rfc.RfcReference;
 import jakarta.annotation.Nonnull;
 

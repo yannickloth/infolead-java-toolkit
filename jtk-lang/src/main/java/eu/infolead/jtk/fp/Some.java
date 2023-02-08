@@ -5,6 +5,8 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import eu.infolead.jtk.logic.Bool;
+
 record Some<T>(T value) implements Maybe<T>, Serializable {
     private static final long serialVersionUID = -1L;
 

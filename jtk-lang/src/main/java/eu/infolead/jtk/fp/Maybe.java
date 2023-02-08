@@ -9,6 +9,8 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import eu.infolead.jtk.logic.Bool;
+
 public interface Maybe<T> {
 
     @SuppressWarnings("unchecked")

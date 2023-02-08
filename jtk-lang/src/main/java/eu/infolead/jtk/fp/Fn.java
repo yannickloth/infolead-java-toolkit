@@ -1,8 +1,11 @@
 package eu.infolead.jtk.fp;
 
-import java.util.function.Supplier;
+import static eu.infolead.jtk.lang.SonarLintWarning.JAVA_S107;
+import static eu.infolead.jtk.lang.SonarLintWarning.JAVA_S1172;
+import static eu.infolead.jtk.lang.SonarLintWarning.JAVA_S119;
+import static eu.infolead.jtk.lang.SonarLintWarning.JAVA_S2326;
 
-import static eu.infolead.jtk.lang.SonarLintWarning.*;
+import java.util.function.Supplier;
 
 /**
  * This class provides a library of useful static methods and classes for
@@ -21,6 +24,11 @@ public final class Fn {
     }
 
     @SuppressWarnings(JAVA_S1172)
+    public static void doNothing() {
+        // empty method body because this method does nothing
+    }
+
+    @SuppressWarnings(JAVA_S1172)
     public static <T> void doNothing(final T value) {
         // empty method body because this method does nothing
     }
@@ -32,24 +40,6 @@ public final class Fn {
 
     public static <U> U toNull() {
         return null;
-    }
-
-    @SuppressWarnings(JAVA_S1172)
-    public static <T> Bool toTrue(final T value) {
-        return Bool.TRUE;
-    }
-
-    public static Bool toTrue() {
-        return Bool.TRUE;
-    }
-
-    @SuppressWarnings(JAVA_S1172)
-    public static <T> Bool toFalse(final T value) {
-        return Bool.FALSE;
-    }
-
-    public static Bool toFalse() {
-        return Bool.FALSE;
     }
 
     /**

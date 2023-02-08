@@ -21,5 +21,9 @@ public enum SonarLintWarning {
     /**
      * 
      */
+    public static final String JAVA_S2447 = "java:S2447";
+    /**
+     * 
+     */
     public static final String JAVA_S4276 = "java:S4276";
 }
