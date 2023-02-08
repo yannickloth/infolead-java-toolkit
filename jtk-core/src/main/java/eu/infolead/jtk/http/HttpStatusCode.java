@@ -30,6 +30,8 @@ public interface HttpStatusCode {
 
     String description();
 
+    Maybe<String> additionalInformation();
+
     default int rfcNumber() {
         return rfcReference().number();
     }
@@ -42,15 +44,29 @@ public interface HttpStatusCode {
     }
 
     public record DefaultHttpStatus(@Nonnull int code, @Nonnull RfcReference rfcReference,
-            @Nonnull Maybe<String> rfcSection, @Nonnull String description)
+            @Nonnull Maybe<String> rfcSection, @Nonnull String description,
+            @Nonnull Maybe<String> additionalInformation)
             implements HttpStatusCode {
 
         public DefaultHttpStatus(@Nonnull int code, @Nonnull RfcReference rfcReference,
-                @Nonnull Maybe<String> rfcSection, @Nonnull String description) {
+                @Nonnull Maybe<String> rfcSection, @Nonnull String description,
+                @Nonnull Maybe<String> additionalInformation) {
             this.code = Objects.requireNonNull(code);
             this.rfcReference = Objects.requireNonNull(rfcReference);
             this.rfcSection = Objects.requireNonNull(rfcSection);
             this.description = Objects.requireNonNull(description);
+            this.additionalInformation = additionalInformation;
+        }
+
+        public DefaultHttpStatus(@Nonnull int code, @Nonnull RfcReference rfcReference,
+                @Nonnull Maybe<String> rfcSection, @Nonnull String description,
+                @Nonnull String additionalInformation) {
+            this(code, rfcReference, rfcSection, description, Maybe.ofNullable(additionalInformation));
+        }
+
+        public DefaultHttpStatus(@Nonnull int code, @Nonnull RfcReference rfcReference,
+                @Nonnull Maybe<String> rfcSection, @Nonnull String description) {
+            this(code, rfcReference, rfcSection, description, Maybe.none());
         }
     }
 }

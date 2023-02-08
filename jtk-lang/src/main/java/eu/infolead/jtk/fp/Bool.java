@@ -5,6 +5,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import eu.infolead.jtk.lang.SonarLintWarning;
 import jakarta.annotation.Nonnull;
 
 /**
@@ -40,7 +41,7 @@ public abstract sealed class Bool implements Serializable {
      *                      we need {@code null} as a possible value.
      * @return
      */
-    @SuppressWarnings("java:S4276")
+    @SuppressWarnings(SonarLintWarning.JAVA_S4276)
     public static NullableBool ofNullable(final Supplier<Boolean> valueSupplier) {
         return Bool.ofNullable(valueSupplier.get());
     }

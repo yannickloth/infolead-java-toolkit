@@ -2,6 +2,8 @@ package eu.infolead.jtk.fp;
 
 import java.util.function.Supplier;
 
+import static eu.infolead.jtk.lang.SonarLintWarning.*;
+
 /**
  * This class provides a library of useful static methods and classes for
  * functional programming.
@@ -18,12 +20,12 @@ public final class Fn {
         return value;
     }
 
-    @SuppressWarnings("squid:S1172")
+    @SuppressWarnings(JAVA_S1172)
     public static <T> void doNothing(final T value) {
         // empty method body because this method does nothing
     }
 
-    @SuppressWarnings("squid:S1172")
+    @SuppressWarnings(JAVA_S1172)
     public static <U, T> U toNull(final T value) {
         return null;
     }
@@ -32,7 +34,7 @@ public final class Fn {
         return null;
     }
 
-    @SuppressWarnings("squid:S1172")
+    @SuppressWarnings(JAVA_S1172)
     public static <T> Bool toTrue(final T value) {
         return Bool.TRUE;
     }
@@ -41,7 +43,7 @@ public final class Fn {
         return Bool.TRUE;
     }
 
-    @SuppressWarnings("squid:S1172")
+    @SuppressWarnings(JAVA_S1172)
     public static <T> Bool toFalse(final T value) {
         return Bool.FALSE;
     }
@@ -57,68 +59,68 @@ public final class Fn {
      * 
      * @param <T0>
      */
-    @SuppressWarnings("java:S2326")
+    @SuppressWarnings(JAVA_S2326)
     public static <T0> void unit() {
         // empty method body
     }
 
-    @SuppressWarnings("java:S1172")
+    @SuppressWarnings(JAVA_S1172)
     public static <T1> void unit(final T1 value) {
         // empty method body
     }
 
-    @SuppressWarnings({ "java:1172" })
+    @SuppressWarnings({ JAVA_S1172 })
     public static <T1, T2> void unit(final T1 val1, final T2 val2) {
         // empty method body
     }
 
-    @SuppressWarnings({ "java:1172" })
+    @SuppressWarnings({ JAVA_S1172 })
     public static <T1, T2, T3> void unit(final T1 val1, final T2 val2, final T3 val3) {
         // empty method body
     }
 
-    @SuppressWarnings({ "java:1172" })
+    @SuppressWarnings({ JAVA_S1172 })
     public static <T1, T2, T3, T4> void unit(final T1 val1, final T2 val2, final T3 val3, final T4 val4) {
         // empty method body
     }
 
-    @SuppressWarnings({ "java:1172" })
+    @SuppressWarnings({ JAVA_S1172 })
     public static <T1, T2, T3, T4, T5> void unit(final T1 val1, final T2 val2, final T3 val3, final T4 val4,
             final T5 val5) {
         // empty method body
     }
 
-    @SuppressWarnings({ "java:1172" })
+    @SuppressWarnings({ JAVA_S1172 })
     public static <T1, T2, T3, T4, T5, T6> void unit(final T1 val1, final T2 val2, final T3 val3, final T4 val4,
             final T5 val5, final T6 val6) {
         // empty method body
     }
 
-    @SuppressWarnings({ "java:1172" })
+    @SuppressWarnings({ JAVA_S1172 })
     public static <T1, T2, T3, T4, T5, T6, T7> void unit(final T1 val1, final T2 val2, final T3 val3, final T4 val4,
             final T5 val5, final T6 val6, final T7 val7) {
         // empty method body
     }
 
-    @SuppressWarnings({ "java:1172", "java:S107" })
+    @SuppressWarnings({ JAVA_S1172, JAVA_S107 })
     public static <T1, T2, T3, T4, T5, T6, T7, T8> void unit(final T1 val1, final T2 val2, final T3 val3, final T4 val4,
             final T5 val5, final T6 val6, final T7 val7, final T8 val8) {
         // empty method body
     }
 
-    @SuppressWarnings({ "java:1172", "java:S107" })
+    @SuppressWarnings({ JAVA_S1172, JAVA_S107 })
     public static <T1, T2, T3, T4, T5, T6, T7, T8, T9> void unit(final T1 val1, final T2 val2, final T3 val3,
             final T4 val4, final T5 val5, final T6 val6, final T7 val7, final T8 val8, final T9 val9) {
         // empty method body
     }
 
-    @SuppressWarnings({ "java:S119", "java:S107" })
+    @SuppressWarnings({ JAVA_S119, JAVA_S107 })
     public static <T1, T2, T3, T4, T5, T6, T7, T8, T9, TA> void unit(final T1 val1, final T2 val2, final T3 val3,
             final T4 val4, final T5 val5, final T6 val6, final T7 val7, final T8 val8, final T9 val9, final TA valA) {
         // empty method body
     }
 
-    @SuppressWarnings({ "java:S119", "java:S107" })
+    @SuppressWarnings({ JAVA_S119, JAVA_S107 })
     public static <T1, T2, T3, T4, T5, T6, T7, T8, T9, TA, TB> void unit(final T1 val1, final T2 val2, final T3 val3,
             final T4 val4, final T5 val5, final T6 val6, final T7 val7, final T8 val8, final T9 val9, final TA val10,
             final TB val11) {
@@ -237,7 +239,7 @@ public final class Fn {
      */
     @FunctionalInterface
     interface FN8<U, T1, T2, T3, T4, T5, T6, T7, T8> {
-        @SuppressWarnings({ "java:S107" })
+        @SuppressWarnings({ JAVA_S107 })
         U apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7, T8 param8);
 
         default <N> FN8<N, T1, T2, T3, T4, T5, T6, T7, T8> then(FN1<N, U> function) {
@@ -250,7 +252,7 @@ public final class Fn {
      */
     @FunctionalInterface
     interface FN9<U, T1, T2, T3, T4, T5, T6, T7, T8, T9> {
-        @SuppressWarnings({ "java:S107" })
+        @SuppressWarnings({ JAVA_S107 })
         U apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7, T8 param8, T9 param9);
 
         default <N> FN9<N, T1, T2, T3, T4, T5, T6, T7, T8, T9> then(FN1<N, U> function) {
@@ -261,10 +263,10 @@ public final class Fn {
     /**
      * Function with 10 parameters and one return value.
      */
-    @SuppressWarnings("java:S119")
+    @SuppressWarnings(JAVA_S119)
     @FunctionalInterface
     interface FN10<U, T1, T2, T3, T4, T5, T6, T7, T8, T9, TA> {
-        @SuppressWarnings({ "java:S107" })
+        @SuppressWarnings({ JAVA_S107 })
         U apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7, T8 param8, T9 param9,
                 TA param10);
     }
@@ -272,10 +274,10 @@ public final class Fn {
     /**
      * Function with 11 parameters and one return value.
      */
-    @SuppressWarnings("java:S119")
+    @SuppressWarnings(JAVA_S119)
     @FunctionalInterface
     interface FN11<U, T1, T2, T3, T4, T5, T6, T7, T8, T9, TA, TB> {
-        @SuppressWarnings({ "java:S107" })
+        @SuppressWarnings({ JAVA_S107 })
         U apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7, T8 param8, T9 param9,
                 TA param10, TB param11);
     }
@@ -283,10 +285,10 @@ public final class Fn {
     /**
      * Function with 12 parameters and one return value.
      */
-    @SuppressWarnings("java:S119")
+    @SuppressWarnings(JAVA_S119)
     @FunctionalInterface
     interface FN12<U, T1, T2, T3, T4, T5, T6, T7, T8, T9, TA, TB, TC> {
-        @SuppressWarnings({ "java:S107" })
+        @SuppressWarnings({ JAVA_S107 })
         U apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7, T8 param8, T9 param9,
                 TA param10, TB param11, TC param12);
     }
@@ -294,10 +296,10 @@ public final class Fn {
     /**
      * Function with 13 parameters and one return value.
      */
-    @SuppressWarnings("java:S119")
+    @SuppressWarnings(JAVA_S119)
     @FunctionalInterface
     interface FN13<U, T1, T2, T3, T4, T5, T6, T7, T8, T9, TA, TB, TC, TD> {
-        @SuppressWarnings({ "java:S107" })
+        @SuppressWarnings({ JAVA_S107 })
         U apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7, T8 param8, T9 param9,
                 TA param10, TB param11, TC param12, TD param13);
     }
@@ -305,10 +307,10 @@ public final class Fn {
     /**
      * Function with 14 parameters and one return value.
      */
-    @SuppressWarnings("java:S119")
+    @SuppressWarnings(JAVA_S119)
     @FunctionalInterface
     interface FN14<U, T1, T2, T3, T4, T5, T6, T7, T8, T9, TA, TB, TC, TD, TE> {
-        @SuppressWarnings({ "java:S107" })
+        @SuppressWarnings({ JAVA_S107 })
         U apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7, T8 param8, T9 param9,
                 TA param10, TB param11, TC param12, TD param13, TE param14);
     }

@@ -10,10 +10,10 @@
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
 	<groupId>eu.infolead.javatoolkit</groupId>
-	<artifactId>jtk-fp</artifactId>
+	<artifactId>jtk-lang</artifactId>
 
-	<name>Infolead Java toolkit - FP</name>
-	<description>Infolead Java toolkit - Functional programming module</description>
+	<name>Infolead Java toolkit - Lang</name>
+	<description>Infolead Java toolkit - Language extension module. Contains functional programming types.</description>
 	<properties>
 		<java.version>17</java.version>
 	</properties>

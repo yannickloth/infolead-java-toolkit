@@ -255,7 +255,7 @@ public enum HttpStatus implements HttpStatusCode {
     /**
      * 
      */
-    NOT_EXTENDED(510, "Not Extended (OBSOLETED)", 2774, Maybe.none()),
+    NOT_EXTENDED(510, "Not Extended (OBSOLETED)", 2774, Maybe.none(), "status-change-http-experiments-to-historic"),
     /**
      * 
      */
@@ -265,6 +265,7 @@ public enum HttpStatus implements HttpStatusCode {
     private final RfcReference reference;
     private final String description;
     private final Maybe<String> rfcSection;
+    private final Maybe<String> additionalInformation;
     private static final Map<Integer, HttpStatus> VALUES = initValues(); // init this once and for all to avoid
                                                                          // reallocating an array each time
 
@@ -282,6 +283,21 @@ public enum HttpStatus implements HttpStatusCode {
             this.reference = new RfcReference(rfcNumber);
             this.description = description;
             this.rfcSection = Objects.requireNonNull(rfcSection);
+            this.additionalInformation = Maybe.none();
+        } else {
+            throw new IllegalArgumentException("the specified HTTP status code is not valid.");
+        }
+    }
+
+    HttpStatus(@Nonnull final int code, @Nonnull final String description, @Nonnull final int rfcNumber,
+            @Nonnull final Maybe<String> rfcSection, final String additionalInfo) {
+        if (HttpStatusCode.isValid(code).toBoolean()) { // here we can't use fold because the instance is not
+                                                        // initialized yet
+            this.code = code;
+            this.reference = new RfcReference(rfcNumber);
+            this.description = description;
+            this.rfcSection = Objects.requireNonNull(rfcSection);
+            this.additionalInformation = Maybe.of(additionalInfo);
         } else {
             throw new IllegalArgumentException("the specified HTTP status code is not valid.");
         }
@@ -305,6 +321,10 @@ public enum HttpStatus implements HttpStatusCode {
     @Override
     public String description() {
         return description;
+    }
+@Override
+    public Maybe<String> additionalInformation() {
+        return additionalInformation;
     }
 
     public static HttpStatusCode of(@Nonnull final int code, @Nonnull final RfcReference rfcReference,

@@ -1,7 +1,9 @@
 package eu.infolead.jtk.fp;
 
+import eu.infolead.jtk.lang.CompilerWarning;
+
 public interface Mappable<T extends Mappable<T>> {
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings(CompilerWarning.UNCHECKED)
     default <R> R map(final Mapper<R, T> mapper) {
         return mapper.map((T) this);
     }

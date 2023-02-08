@@ -17,7 +17,7 @@
 		<module>jtk-core</module>
 		<module>jtk-currency</module>
 		<module>jtk-dependencies</module>
-		<module>jtk-fp</module>
+		<module>jtk-lang</module>
 		<module>jtk-parent</module>
 	</modules>
 </project>

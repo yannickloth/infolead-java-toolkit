@@ -18,7 +18,7 @@ import java.util.Objects;
  *
  * @param <T> the type of the contained value
  */
-public final class NN<T> implements Filterable<NN<T>>,MappableTestable<NN<T>> {
+public final class NN<T> implements Filterable<NN<T>>, MappableTestable<NN<T>> {
     private final T value;
 
     private NN(final T value) {

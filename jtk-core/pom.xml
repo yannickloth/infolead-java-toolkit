@@ -20,7 +20,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>eu.infolead.javatoolkit</groupId>
-			<artifactId>jtk-fp</artifactId>
+			<artifactId>jtk-lang</artifactId>
 		</dependency>
 	</dependencies>
 </project>

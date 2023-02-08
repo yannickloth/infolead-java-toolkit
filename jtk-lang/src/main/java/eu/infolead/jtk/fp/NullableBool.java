@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 import eu.infolead.jtk.fp.NullableBool.False;
 import eu.infolead.jtk.fp.NullableBool.Null;
 import eu.infolead.jtk.fp.NullableBool.True;
+import eu.infolead.jtk.lang.SonarLintWarning;
 import jakarta.annotation.Nullable;
 
 public abstract sealed class NullableBool implements Serializable permits True, False, Null {
@@ -16,19 +17,19 @@ public abstract sealed class NullableBool implements Serializable permits True, 
 
     public abstract NullableBool apply(Runnable falseAction, Runnable nullAction, Runnable trueAction);
 
-    public NullableBool ifTrue(final Consumer<Bool> trueConsumer) {
+    public NullableBool ifTrue(@SuppressWarnings(SonarLintWarning.JAVA_S1172) final Consumer<Bool> trueConsumer) {
         return this;
     }
 
-    public NullableBool ifFalse(final Consumer<Bool> falseConsumer) {
+    public NullableBool ifFalse(@SuppressWarnings(SonarLintWarning.JAVA_S1172) final Consumer<Bool> falseConsumer) {
         return this;
     }
 
-    public NullableBool ifNull(final Consumer<Bool> nullConsumer) {
+    public NullableBool ifNull(@SuppressWarnings(SonarLintWarning.JAVA_S1172) final Consumer<Bool> nullConsumer) {
         return this;
     }
 
-    public abstract <R> R fold( Supplier<R> falseSupplier,  Supplier<R> nullSupplier,  Supplier<R> trueSupplier);
+    public abstract <R> R fold(Supplier<R> falseSupplier, Supplier<R> nullSupplier, Supplier<R> trueSupplier);
 
     @Nullable
     public abstract Boolean toBoolean();
@@ -42,7 +43,8 @@ public abstract sealed class NullableBool implements Serializable permits True, 
         }
 
         @Override
-        public <R> R fold(final Supplier<R> falseSupplier, final Supplier<R> nullSupplier, final Supplier<R> trueSupplier) {
+        public <R> R fold(final Supplier<R> falseSupplier, final Supplier<R> nullSupplier,
+                final Supplier<R> trueSupplier) {
             return trueSupplier.get();
         }
 
@@ -67,7 +69,8 @@ public abstract sealed class NullableBool implements Serializable permits True, 
         }
 
         @Override
-        public <R> R fold(final Supplier<R> falseSupplier, final Supplier<R> nullSupplier, final Supplier<R> trueSupplier) {
+        public <R> R fold(final Supplier<R> falseSupplier, final Supplier<R> nullSupplier,
+                final Supplier<R> trueSupplier) {
             return falseSupplier.get();
         }
 
@@ -86,13 +89,14 @@ public abstract sealed class NullableBool implements Serializable permits True, 
     static final class Null extends NullableBool {
 
         @Override
-        public NullableBool apply(final Runnable falseAction, final Runnable nullAction,final  Runnable trueAction) {
+        public NullableBool apply(final Runnable falseAction, final Runnable nullAction, final Runnable trueAction) {
             nullAction.run();
             return this;
         }
 
         @Override
-        public <R> R fold(final Supplier<R> falseSupplier,final  Supplier<R> nullSupplier,final  Supplier<R> trueSupplier) {
+        public <R> R fold(final Supplier<R> falseSupplier, final Supplier<R> nullSupplier,
+                final Supplier<R> trueSupplier) {
             return nullSupplier.get();
         }
 

@@ -6,7 +6,9 @@ import java.util.function.Supplier;
 
 import eu.infolead.jtk.fp.Result.Failure;
 import eu.infolead.jtk.fp.Result.Success;
+import eu.infolead.jtk.lang.CompilerWarning;
 
+@SuppressWarnings(CompilerWarning.RAW_TYPES)
 public sealed interface Result<T> permits Success, Failure {
     static <T> Result<T> success(final T value) {
         return new Success<>(value);
@@ -39,7 +41,7 @@ public sealed interface Result<T> permits Success, Failure {
      *         {@code this}.
      * @param <U> the type of the result's successful value.
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings(CompilerWarning.UNCHECKED)
     default <U> Result<U> flatMap(final Mapper<Result<U>, ? super T> mapper) {
         return fold(a -> (Result<U>) this, mapper);
     }
@@ -55,7 +57,7 @@ public sealed interface Result<T> permits Success, Failure {
      *         {@code this}.
      * @param <U> the type of the result's successful value.
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings(CompilerWarning.UNCHECKED)
     default <U> Result<U> flatMap(final Supplier<Result<U>> resultSupplier) {
         return fold(a -> (Result<U>) this, a -> resultSupplier.get());
     }
