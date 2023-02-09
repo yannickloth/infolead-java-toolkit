@@ -322,7 +322,8 @@ public enum HttpStatus implements HttpStatusCode {
     public String description() {
         return description;
     }
-@Override
+
+    @Override
     public Maybe<String> additionalInformation() {
         return additionalInformation;
     }
@@ -331,7 +332,7 @@ public enum HttpStatus implements HttpStatusCode {
             @Nonnull final Maybe<String> rfcSection,
             @Nonnull final String description) {
         final Maybe<HttpStatus> status = Maybe.ofNullable(VALUES.get(code));
-        return status.fold(() -> new HttpStatusCode.DefaultHttpStatus(code, rfcReference, rfcSection, description),
-                s -> s);
+        return status.fold(v -> new HttpStatusCode.DefaultHttpStatus(code, rfcReference, rfcSection, description),
+                Maybe::identity);
     }
 }

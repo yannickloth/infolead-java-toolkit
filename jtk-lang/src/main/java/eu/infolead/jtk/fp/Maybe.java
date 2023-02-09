@@ -6,12 +6,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
+
 import java.util.stream.Stream;
 
 import eu.infolead.jtk.logic.Bool;
 
-public interface Maybe<T> {
+public interface Maybe<T> extends Either<Void, T> {
 
     @SuppressWarnings("unchecked")
     static <U> Maybe<U> none() {
@@ -33,8 +33,8 @@ public interface Maybe<T> {
         return condition.fold(Maybe::none, () -> Maybe.of(value));
     }
 
-    static <U> Maybe<U> when(final Bool condition, final Supplier<U> valueSupplier) {
-        return condition.fold(Maybe::none, () -> Maybe.of(valueSupplier.get()));
+    static <U> Maybe<U> when(final Bool condition, final Provider<U> valueProvider) {
+        return condition.fold(Maybe::none, () -> Maybe.of(valueProvider.get()));
     }
 
     /**
@@ -101,7 +101,10 @@ public interface Maybe<T> {
         return ofNullable(optional.orElse(null));
     }
 
-    <U> U fold(Supplier<? extends U> emptyMapper, Mapper<? extends U, ? super T> presentMapper);
+    default <U> U fold(final Provider<? extends U> emptyProvider,
+            final Mapper<? extends U, ? super T> presentMapper) {
+        return fold(emptyProvider.asMapper(), presentMapper);
+    }
 
     /**
      * Method which either consumes the present value to produce some side
@@ -113,27 +116,54 @@ public interface Maybe<T> {
     Maybe<T> apply(Runnable emptyAction, Consumer<? super T> presentConsumer);
 
     default <U> Maybe<U> map(final Mapper<U, ? super T> mapper) {
-        return fold(Maybe::none, t -> Maybe.of(mapper.map(t)));
+        return fold(n -> Maybe.none(), t -> Maybe.of(mapper.map(t)));
     }
 
-    default <U> Maybe<U> map(final Supplier<U> supplier) {
-        return fold(Maybe::none, t -> of(supplier.get()));
+    default <U> Maybe<U> map(final Provider<U> provider) {
+        return fold(n -> Maybe.none(), t -> of(provider.get()));
     }
 
-    default <U> Maybe<U> flatMap(final Mapper<Maybe<U>, ? super T> mapper) {
-        return fold(Maybe::none, mapper);
-    }
+    // default <U> Maybe<U> flatMap(final Mapper<Maybe<U>, ? super T> mapper) {
+    // return fold(Maybe::none, mapper);
+    // }
+    // @Override
+    // default <U> Maybe<U> flatMap(final Provider<Maybe<U>> provider) {
+    // return fold(Maybe::none, t -> provider.get());
+    // }
 
-    default <U> Maybe<U> flatMap(final Supplier<Maybe<U>> supplier) {
-        return fold(Maybe::none, t -> supplier.get());
+    // default <U> Maybe<U> bind(final Mapper<Maybe<U>, ? super T> mapper) {
+    // return flatMap(mapper);
+    // }
+
+    // default <U> Maybe<U> bind(final Provider<Maybe<U>> provider) {
+    // return flatMap(provider);
+    // }
+
+    // default <U> Maybe<U> andThen(final Mapper<Maybe<U>, ? super T> mapper) {
+    // return flatMap(mapper);
+    // }
+
+    // default <U> Maybe<U> andThen(final Provider<Maybe<U>> provider) {
+    // return flatMap(provider);
+    // }
+
+    // default <U> Maybe<U> ifSomeDo(final Mapper<Maybe<U>, ? super T> mapper) {
+    // return flatMap(mapper);
+    // }
+
+    // default <U> Maybe<U> ifSomeDo(final Provider<Maybe<U>> provider) {
+    // return flatMap(provider);
+    // }
+    default <U> Maybe<U> ifSomeDo(final Provider<Maybe<U>> provider) {
+        return ifRightDo(t -> provider.get());
     }
 
     default Maybe<T> filter(final Predicate<? super T> predicate) {
-        return fold(Maybe::none, v -> predicate.test(v) ? this : none());
+        return fold(v -> Maybe.none(), v -> predicate.test(v) ? this : none());
     }
 
     default Stream<T> stream() {
-        return fold(Stream::empty, Stream::of);
+        return fold(v -> Stream.empty(), Stream::of);
     }
 
     default Bool isPresent() {
@@ -148,29 +178,31 @@ public interface Maybe<T> {
         return value;
     }
 
-    default T or(final T replacement) {
-        return fold(() -> replacement, Maybe::identity);
-    }
+    // @Override
+    // default T or(final T replacement) {
+    // return fold(v -> replacement, t -> t);
+    // }
 
-    default T orNull() {
-        return fold(Fn::toNull, t -> t);
-    }
+    // default T orNull() {
+    // return fold(Fn::toNull, Maybe::identity);
+    // }
 
-    default T or(final Supplier<T> supplier) {
-        return fold(supplier, Maybe::identity);
-    }
+    // default T or(final Provider<T> replacementProvider) {
+    // return fold(v -> replacementProvider.get(), y -> y);
+    // }
 
     default Maybe<T> orElse(final T replacement) {
-        return fold(() -> Maybe.ofNullable(replacement), t -> this);
+        return fold(v -> Maybe.ofNullable(replacement), t -> this);
     }
 
     default Maybe<T> orElse(final Maybe<T> replacement) {
-        return fold(() -> replacement, t -> this);
+        return fold(v -> replacement, t -> this);
     }
 
-    default Maybe<T> orElse(final Supplier<Maybe<T>> supplier) {
-        return fold(supplier, t -> this);
-    }
+    // @Override
+    // default Maybe<T> orElse(final Provider<Maybe<T>> replacementProvider) {
+    // return fold(replacementProvider, t -> this);
+    // }
 
     /**
      * Wraps the value of this{@link Maybe} in an {@link Optional}. <strong>NOTE:
@@ -182,7 +214,7 @@ public interface Maybe<T> {
      *         {@link Maybe}.
      */
     default Optional<T> toOptional() {
-        return fold(Optional::empty, Optional::of);
+        return fold(v -> Optional.empty(), Optional::of);
     }
 
     /**
@@ -191,8 +223,8 @@ public interface Maybe<T> {
      * @return an instance of {@link Result} wrapping the value of this
      *         {@link Maybe}.
      */
-    default Result<T> toResult(final Anomaly anomaly) {
-        return fold(() -> Result.failure(anomaly), Result::success);
+    default Result<Void, T> toResult(final Anomaly anomaly) {
+        return fold(v -> Result.failure(null), Result::success);
     }
 
     @SafeVarargs
@@ -201,8 +233,8 @@ public interface Maybe<T> {
     }
 
     @SafeVarargs
-    static <U> Maybe<U> any(final Supplier<Maybe<U>>... maybeSuppliers) {
-        return Arrays.stream(maybeSuppliers).map(Supplier::get).filter(m -> m.isPresent().toBoolean()).findFirst()
+    static <U> Maybe<U> any(final Provider<Maybe<U>>... maybeProviders) {
+        return Arrays.stream(maybeProviders).map(Provider::get).filter(m -> m.isPresent().toBoolean()).findFirst()
                 .orElse(Maybe.none());
     }
 
@@ -213,8 +245,8 @@ public interface Maybe<T> {
     }
 
     @SafeVarargs
-    static <U> Maybe<U> anyOptional(final Supplier<Optional<U>>... optionalSuppliers) {
-        return Arrays.stream(optionalSuppliers).map(Supplier::get).map(Maybe::of).filter(m -> m.isPresent().toBoolean())
+    static <U> Maybe<U> anyOptional(final Provider<Optional<U>>... optionalProviders) {
+        return Arrays.stream(optionalProviders).map(Provider::get).map(Maybe::of).filter(m -> m.isPresent().toBoolean())
                 .findFirst()
                 .orElse(Maybe.none());
     }

@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 
 import eu.infolead.jtk.logic.Bool;
 
-record Some<T>(T value) implements Maybe<T>, Serializable {
+class Some<T> extends Either.Right<Void, T> implements Maybe<T>, Serializable {
     private static final long serialVersionUID = -1L;
 
     /**
@@ -17,18 +17,12 @@ record Some<T>(T value) implements Maybe<T>, Serializable {
      * @throws NullPointerException if {@code value==null}.
      */
     Some(final T value) {
-        this.value = Objects.requireNonNull(value);
-    }
-
-    @Override
-    public <U> U fold(final Supplier<? extends U> emptyMapper,
-            final Mapper<? extends U, ? super T> presentMapper) {
-        return presentMapper.map(value);
+        super(Objects.requireNonNull(value));
     }
 
     @Override
     public Maybe<T> apply(final Runnable emptyAction, final Consumer<? super T> presentConsumer) {
-        presentConsumer.accept(value);
+        presentConsumer.accept(value());
         return this;
     }
 
@@ -50,16 +44,16 @@ record Some<T>(T value) implements Maybe<T>, Serializable {
         if (obj == null || getClass() != obj.getClass()) {
             return false;
         }
-        return Objects.equals(value, ((Some<?>) obj).value);
+        return Objects.equals(value(), ((Some<?>) obj).value());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(value);
+        return Objects.hashCode(value());
     }
 
     @Override
     public String toString() {
-        return value.toString();
+        return value().toString();
     }
 }

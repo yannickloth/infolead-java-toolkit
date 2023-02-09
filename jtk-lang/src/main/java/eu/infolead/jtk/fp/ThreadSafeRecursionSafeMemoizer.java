@@ -28,9 +28,9 @@ import jakarta.annotation.Nonnull;
  */
 public final class ThreadSafeRecursionSafeMemoizer implements Memoizer {
 
-    public <I, O> Function<I, O> memoize(@Nonnull final Maybe<Supplier<Map<I, O>>> mapSupplier,
+    public <I, O> Function<I, O> memoize(@Nonnull final Maybe<Supplier<Map<I, O>>> mapSupplierMaybe,
             @Nonnull final Function<I, O> f) {
-        final Map<I, O> lookup = mapSupplier.fold(() -> new HashMap<I, O>(), Supplier::get);
+        final Map<I, O> lookup = mapSupplierMaybe.fold(() -> new HashMap<I, O>(), Supplier::get);
         final var lock = new ReentrantLock();
         return input -> {
             lock.lock();

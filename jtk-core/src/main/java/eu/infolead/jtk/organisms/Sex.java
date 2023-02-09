@@ -22,7 +22,7 @@ public enum Sex {
      */
     UNSPECIFIED;
 
-    public static Result<Sex> of(final NN<String> gender) {
+    public static Result<Void, Sex> of(final NN<String> gender) {
         try {
             return Result.success(gender == null ? UNSPECIFIED : valueOf(gender.get()));
         } catch (final IllegalArgumentException e) {

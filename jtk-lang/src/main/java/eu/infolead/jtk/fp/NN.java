@@ -27,7 +27,7 @@ public final class NN<T> implements Filterable<NN<T>>, MappableTestable<NN<T>> {
         this.value = Objects.requireNonNull(value, "The specified value must not be null.");
     }
 
-    public static <T> Result<NN<T>> of(final T value) {
+    public static <V> Result<Void, NN<V>> of(final V value) {
         try {
             return Result.success(new NN<>(value));
         } catch (final NullPointerException npe) {

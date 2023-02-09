@@ -43,7 +43,11 @@ public abstract sealed class Bool implements Serializable {
         return b.negate();
     }
 
-    public abstract Bool and(Bool bool);
+    public abstract Bool and(Supplier<Bool> bool);
+
+    public Bool and(final Bool bool) {
+        return and(() -> bool);
+    }
 
     public final Bool and(final boolean bool) {
         return and(Bool.of(bool));
@@ -96,9 +100,10 @@ public abstract sealed class Bool implements Serializable {
     public abstract boolean toBoolean();
 
     static final class True extends Bool {
+
         @Override
-        public Bool and(final Bool bool) {
-            return bool;
+        public Bool and(final Supplier<Bool> boolSupplier) {
+            return boolSupplier.get();
         }
 
         @Override
@@ -159,7 +164,7 @@ public abstract sealed class Bool implements Serializable {
 
     static final class False extends Bool {
         @Override
-        public Bool and(final Bool bool) {
+        public Bool and(final Supplier<Bool> bool) {
             return this;
         }
 

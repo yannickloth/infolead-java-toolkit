@@ -8,7 +8,7 @@ import eu.infolead.jtk.fp.Result;
 public record RfcReference(int number) {
     public static final String BASE_URL = "https://www.rfc-editor.org/rfc/rfc";
 
-    public Result<URL> jsonUrl() {
+    public Result<Void, URL> jsonUrl() {
         try {
             return Result.success(new URL(BASE_URL + number() + ".json"));
         } catch (MalformedURLException e) {
@@ -16,7 +16,7 @@ public record RfcReference(int number) {
         }
     }
 
-    public Result<URL> textUrl() {
+    public Result<Void, URL> textUrl() {
         try {
             return Result.success(new URL(BASE_URL + number() + ".txt"));
         } catch (MalformedURLException e) {
@@ -24,7 +24,7 @@ public record RfcReference(int number) {
         }
     }
 
-    public Result<URL> url() {
+    public Result<Void, URL> url() {
         try {
             return Result.success(new URL(BASE_URL + number()));
         } catch (MalformedURLException e) {
@@ -32,7 +32,7 @@ public record RfcReference(int number) {
         }
     }
 
-    public Result<URL> url(final String section) {
+    public Result<Void, URL> url(final String section) {
         // TODO validate section format
         try {
             return Result.success(new URL(BASE_URL + number() + "#section-" + section));
