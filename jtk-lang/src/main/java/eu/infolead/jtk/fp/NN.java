@@ -1,7 +1,6 @@
 package eu.infolead.jtk.fp;
 
 import java.util.Objects;
-import java.util.function.Supplier;
 
 /**
  * This class explicitly indicates that any variable, method argument or
