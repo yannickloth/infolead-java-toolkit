@@ -33,14 +33,20 @@
  * {@code Either} instance, a call to {@code flatMap()} will always return this
  * left instance.
  * <h4>Back to one track</h4>
- * {@code or()} allows to receive either the value from the right side of the
+ * {@code ()} allows to receive either the value from the right side of the
  * {@code Either} instance if any, or the replacement value specified as a
  * parameter of
- * {@code or()}. This is the correct way to retrieve a value, as it takes into
+ * {@code or()}.
+ * <p>
+ * This is the correct way to retrieve a value, as it takes into
  * account the fact
- * that an {@code Either} has two possible forms/states (left or right, some or
- * none for Maybe, success or failure for Result): not knowing what constitutes
- * the {@code Either} instance, it is necessary to think about the two
+ * that an {@code Either} has two possible forms/states (<em>left</em> or
+ * <em>right</em>, <em>some</em> or
+ * <em>none</em> for {@link eu.infolead.jtk.fp.Maybe}, <em>success</em> or
+ * <em>failure</em> for
+ * {@link eu.infolead.jtk.fp.Result}): not knowing what constitutes
+ * a given {@code Either} instance (else one wouldn't need an {@code Either}
+ * instance), it is necessary to think about the two
  * situations and handle each correctly.
  * <h3>References</h3>
  * <ol>
