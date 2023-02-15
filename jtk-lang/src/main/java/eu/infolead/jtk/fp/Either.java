@@ -166,7 +166,18 @@ public interface Either<L, R> {
 
     @SuppressWarnings(CompilerWarning.RAW_TYPES)
     abstract sealed class Wrapper<T> permits Right, Left {
-        private final T value;
+        /**
+         * <strong>Note: </strong> Must not be {@code final}, because else
+         * deserialization will fail.
+         * <p>
+         * Cf. <a target="_blank" href=
+         * "https://rules.sonarsource.com/java/RSPEC-2055">https://rules.sonarsource.com/java/RSPEC-2055</a>
+         */
+        private T value;
+
+        Wrapper() {
+            this.value = null;
+        }
 
         Wrapper(final T value) {
             this.value = value;
@@ -183,6 +194,16 @@ public interface Either<L, R> {
     }
 
     non-sealed class Right<L, R> extends Wrapper<R> implements Either<L, R> {
+        /**
+         * The non-serializable super class of a "Serializable" class ({@link Some} and
+         * {@link None}) should have a no-argument constructor
+         * <p>
+         * Cf. <a target="_blank" href=
+         * "https://rules.sonarsource.com/java/RSPEC-2055">https://rules.sonarsource.com/java/RSPEC-2055</a>
+         */
+        Right() {
+            super();
+        }
 
         Right(final R value) {
             super(value);
@@ -206,6 +227,9 @@ public interface Either<L, R> {
     }
 
     non-sealed class Left<L, R> extends Wrapper<L> implements Either<L, R> {
+        Left() {
+            super();
+        }
 
         Left(final L value) {
             super(value);
