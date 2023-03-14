@@ -3,10 +3,19 @@
  * functional programming.
  * 
  * <h3>About various functions</h3>
- * <h4>flatMap()</h4>
+ * <h4>{@link eu.infolead.jtk.fp.either.Either#map()}</h4>
+ * With {@link eu.infolead.jtk.fp.either.Either#map()}, the specified mapping function
+ * is applied on the value and returns a new value ({@code flatMap()} returns a
+ * new instance of {@link Either}).
+ * <h4>{@link eu.infolead.jtk.fp.either.Either#flatMap()}</h4>
  * <ol>
  * <li>{@code flatMap()} is sometimes also called {@code bind()},
  * {@code andThen()} or {@code ifSomeDo()}.
+ * <li>
+ * With {@link eu.infolead.jtk.fp.either.Either#flatMap()}, the specified mapping
+ * function
+ * is applied on the value and returns a new {@link Either} instance.
+ * </li>
  * <p>
  * Cf. reference WLA1.
  * </ol>
@@ -15,11 +24,11 @@
  * In the following, {@code Either} instance means an
  * instance of any type that
  * is conceptually a specialization of {@code Either}:
- * {@link eu.infolead.jtk.fp.Maybe},
- * {@link eu.infolead.jtk.fp.Result}...
+ * {@link eu.infolead.jtk.fp.either.Maybe},
+ * {@link eu.infolead.jtk.fp.either.Result}...
  * <p>
- * {@link eu.infolead.jtk.fp.Maybe#none()} and
- * {@link eu.infolead.jtk.fp.Result#failure(Anomaly)}
+ * {@link eu.infolead.jtk.fp.either.Maybe#none()} and
+ * {@link eu.infolead.jtk.fp.either.Result#failure(Anomaly)}
  * correspond to the <em>left</em> part of an {@code Either}.
  * <h4>Rail switch: from one track to two tracks</h4>
  * <p>
@@ -42,9 +51,9 @@
  * account the fact
  * that an {@code Either} has two possible forms/states (<em>left</em> or
  * <em>right</em>, <em>some</em> or
- * <em>none</em> for {@link eu.infolead.jtk.fp.Maybe}, <em>success</em> or
+ * <em>none</em> for {@link eu.infolead.jtk.fp.either.Maybe}, <em>success</em> or
  * <em>failure</em> for
- * {@link eu.infolead.jtk.fp.Result}): not knowing what constitutes
+ * {@link eu.infolead.jtk.fp.either.Result}): not knowing what constitutes
  * a given {@code Either} instance (else one wouldn't need an {@code Either}
  * instance), it is necessary to think about the two
  * situations and handle each correctly.
@@ -57,3 +66,5 @@
  * </ol>
  */
 package eu.infolead.jtk.fp;
+
+import eu.infolead.jtk.fp.either.Either;

@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import eu.infolead.jtk.fp.Maybe;
+import eu.infolead.jtk.fp.either.Maybe;
 import eu.infolead.jtk.rfc.RfcReference;
 import jakarta.annotation.Nonnull;
 

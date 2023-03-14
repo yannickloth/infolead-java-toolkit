@@ -4,7 +4,11 @@ import static eu.infolead.jtk.lang.SonarLintWarning.JAVA_S1172;
 
 import java.io.Serializable;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+
+import eu.infolead.jtk.fp.Filterable;
 
 /**
  * Represents the classical two-valued boolean, which may have the value
@@ -23,7 +27,7 @@ import java.util.function.Supplier;
  * MUST never allow {@code null} as an argument or a return value.</li>
  * </ol>
  */
-public abstract sealed class Bool implements Serializable {
+public abstract sealed class Bool implements Serializable, Filterable<Bool> {
     public static final Bool TRUE = new True();
     public static final Bool FALSE = new False();
 
@@ -98,6 +102,10 @@ public abstract sealed class Bool implements Serializable {
     public abstract Bool ifFalse(Runnable falseAction);
 
     public abstract boolean toBoolean();
+
+    public Stream<Bool> filter(final Predicate<Bool> p) {
+        return Stream.of(this).filter(p);
+    }
 
     static final class True extends Bool {
 

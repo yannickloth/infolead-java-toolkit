@@ -2,6 +2,8 @@ package eu.infolead.jtk.fp;
 
 import java.util.Objects;
 
+import eu.infolead.jtk.fp.either.Result;
+
 /**
  * This class explicitly indicates that any variable, method argument or
  * returned value of this type must not be {@code null}. The value it wraps is
@@ -15,11 +17,16 @@ import java.util.Objects;
  * class communicates the intent of the developer to never manipulate a
  * reference that may
  * be {@code null}.
+ * 
+ * <p>
+ * To rephrase: the reference to an {@link NN} MUST NOT
+ * (ever)
+ * be {@code null} and the contained value MUST NOT (ever) be {@code null}.
  * </p>
  *
  * @param <T> the type of the contained value
  */
-public final class NN<T> implements Filterable<NN<T>>, MappableTestable<NN<T>> {
+public final class NN<T> implements Filterable<NN<T>>, Mappable<NN<T>>, Testable<NN<T>> {
     private final T value;
 
     private NN(final T value) {

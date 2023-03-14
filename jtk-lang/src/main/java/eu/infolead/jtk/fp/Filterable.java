@@ -3,8 +3,11 @@ package eu.infolead.jtk.fp;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public interface Filterable<T extends Filterable<T>>  {
-    default Stream<Filterable<T>> filter(Predicate<Filterable<T>> p) {
-        return Stream.of(this).filter(p);
+import eu.infolead.jtk.lang.CompilerWarning;
+
+public interface Filterable<F extends Filterable<F>> {
+    @SuppressWarnings(CompilerWarning.UNCHECKED)
+    default Stream<F> filter(final Predicate<F> p) {
+        return Stream.of((F) this).filter(p);
     }
 }

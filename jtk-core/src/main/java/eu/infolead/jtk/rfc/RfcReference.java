@@ -3,7 +3,7 @@ package eu.infolead.jtk.rfc;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import eu.infolead.jtk.fp.Result;
+import eu.infolead.jtk.fp.either.Result;
 
 public record RfcReference(int number) {
     public static final String BASE_URL = "https://www.rfc-editor.org/rfc/rfc";

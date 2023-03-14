@@ -4,6 +4,9 @@ import java.net.URI;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+import eu.infolead.jtk.fp.either.Maybe;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**

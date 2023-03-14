@@ -1,7 +1,7 @@
 package eu.infolead.jtk.organisms;
 
 import eu.infolead.jtk.fp.NN;
-import eu.infolead.jtk.fp.Result;
+import eu.infolead.jtk.fp.either.Result;
 
 /**
  * Represents the essentially binary biological form of living organisms on the

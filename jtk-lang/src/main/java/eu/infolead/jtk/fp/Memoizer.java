@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import eu.infolead.jtk.fp.either.Maybe;
 import jakarta.annotation.Nonnull;
 
 public interface Memoizer {
