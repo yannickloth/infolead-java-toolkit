@@ -9,6 +9,7 @@ pkgs.mkShell {
     pkgs.bashInteractive
 
     git
+    google-java-format
     jdk
     lorri
     maven
