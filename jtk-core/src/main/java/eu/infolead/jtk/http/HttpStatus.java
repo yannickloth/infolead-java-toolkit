@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import eu.infolead.jtk.fp.Fn;
 import eu.infolead.jtk.fp.either.Maybe;
 import eu.infolead.jtk.rfc.RfcReference;
 import jakarta.annotation.Nonnull;
@@ -333,6 +334,6 @@ public enum HttpStatus implements HttpStatusCode {
             @Nonnull final String description) {
         final Maybe<HttpStatus> status = Maybe.ofNullable(VALUES.get(code));
         return status.fold(v -> new HttpStatusCode.DefaultHttpStatus(code, rfcReference, rfcSection, description),
-                Maybe::identity);
+                Fn::identity);
     }
 }
