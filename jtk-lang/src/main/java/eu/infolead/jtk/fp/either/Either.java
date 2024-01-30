@@ -105,6 +105,22 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
         return fold(l -> Either.left(provider.get()), Either::right);
     }
 
+    /**
+     * <p>
+     *     In Railway-Oriented Programming, this method transforms a "track switch" function (a switch is something that
+     *     has a one-track input and returns a two-track output) into a two-track input function that returns a
+     *     two-track output.
+     * </p>
+     * <p>
+     *     This is of course very different from a combination of validation functions, in which usually one wants to
+     *     get the full list of anomalies: this only returns the first anomaly and short-circuits all following steps.
+     * </p>
+     * @param mapper
+     * @return
+     * @param <G>
+     * @param <D>
+     * @param <E>
+     */
     @SuppressWarnings(CompilerWarning.UNCHECKED)
     default <G extends L, D, E extends Either<G, D>> E flatMap(final Mapper<E, ? super R> mapper) {
         return fold(l -> (E) this, mapper);
