@@ -35,7 +35,7 @@ public final class Fn {
      * @param other
      * @return
      */
-    static <U> U or(final U value, final U other) {
+    public static <U> U or(final U value, final U other) {
         return Bool.of(value != null).fold(() -> other, () -> value);
     }
 
@@ -148,7 +148,7 @@ public final class Fn {
      * Function with no parameters (supplier). Provided for consistency.
      */
     @FunctionalInterface
-    interface FN0<U> extends Supplier<U> {
+    public interface FN0<U> extends Supplier<U> {
         default U apply() {
             return get();
         }
@@ -163,14 +163,14 @@ public final class Fn {
      * programming.
      */
     @FunctionalInterface
-    interface FN1<U, T1> extends Function<T1, U> {
+    public interface FN1<U, T1> extends Function<T1, U> {
     }
 
     /**
      * Function with two parameters and one return value.
      */
     @FunctionalInterface
-    interface FN2<U, T1, T2> {
+    public interface FN2<U, T1, T2> {
         U apply(T1 param1, T2 param2);
 
         default FN1<U, T2> bind(final T1 param) {
@@ -186,7 +186,7 @@ public final class Fn {
      * Function with three parameters and one return value.
      */
     @FunctionalInterface
-    interface FN3<U, T1, T2, T3> {
+    public interface FN3<U, T1, T2, T3> {
         U apply(T1 param1, T2 param2, T3 param3);
 
         default <N> FN3<N, T1, T2, T3> andThen(FN1<N, U> function) {
@@ -198,7 +198,7 @@ public final class Fn {
      * Function with four parameters and one return value.
      */
     @FunctionalInterface
-    interface FN4<U, T1, T2, T3, T4> {
+    public interface FN4<U, T1, T2, T3, T4> {
         U apply(T1 param1, T2 param2, T3 param3, T4 param4);
 
         default <N> FN4<N, T1, T2, T3, T4> andThen(FN1<N, U> function) {
@@ -210,7 +210,7 @@ public final class Fn {
      * Function with 5 parameters and one return value.
      */
     @FunctionalInterface
-    interface FN5<U, T1, T2, T3, T4, T5> {
+    public interface FN5<U, T1, T2, T3, T4, T5> {
         U apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5);
 
         default <N> FN5<N, T1, T2, T3, T4, T5> andThen(FN1<N, U> function) {
@@ -222,7 +222,7 @@ public final class Fn {
      * Function with 6 parameters and one return value.
      */
     @FunctionalInterface
-    interface FN6<U, T1, T2, T3, T4, T5, T6> {
+    public interface FN6<U, T1, T2, T3, T4, T5, T6> {
         U apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6);
 
         default <N> FN6<N, T1, T2, T3, T4, T5, T6> andThen(FN1<N, U> function) {
@@ -234,7 +234,7 @@ public final class Fn {
      * Function with 7 parameters and one return value.
      */
     @FunctionalInterface
-    interface FN7<U, T1, T2, T3, T4, T5, T6, T7> {
+    public interface FN7<U, T1, T2, T3, T4, T5, T6, T7> {
         U apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7);
 
         default <N> FN7<N, T1, T2, T3, T4, T5, T6, T7> andThen(FN1<N, U> function) {
@@ -246,7 +246,7 @@ public final class Fn {
      * Function with 8 parameters and one return value.
      */
     @FunctionalInterface
-    interface FN8<U, T1, T2, T3, T4, T5, T6, T7, T8> {
+    public interface FN8<U, T1, T2, T3, T4, T5, T6, T7, T8> {
         @SuppressWarnings({ JAVA_S107 })
         U apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7, T8 param8);
 
@@ -259,7 +259,7 @@ public final class Fn {
      * Function with 9 parameters and one return value.
      */
     @FunctionalInterface
-    interface FN9<U, T1, T2, T3, T4, T5, T6, T7, T8, T9> {
+    public interface FN9<U, T1, T2, T3, T4, T5, T6, T7, T8, T9> {
         @SuppressWarnings({ JAVA_S107 })
         U apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7, T8 param8, T9 param9);
 
@@ -273,7 +273,7 @@ public final class Fn {
      */
     @SuppressWarnings(JAVA_S119)
     @FunctionalInterface
-    interface FN10<U, T1, T2, T3, T4, T5, T6, T7, T8, T9, TA> {
+    public interface FN10<U, T1, T2, T3, T4, T5, T6, T7, T8, T9, TA> {
         @SuppressWarnings({ JAVA_S107 })
         U apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7, T8 param8, T9 param9,
                 TA param10);
@@ -289,7 +289,7 @@ public final class Fn {
      */
     @SuppressWarnings(JAVA_S119)
     @FunctionalInterface
-    interface FN11<U, T1, T2, T3, T4, T5, T6, T7, T8, T9, TA, TB> {
+    public interface FN11<U, T1, T2, T3, T4, T5, T6, T7, T8, T9, TA, TB> {
         @SuppressWarnings({ JAVA_S107 })
         U apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7, T8 param8, T9 param9,
                 TA param10, TB param11);
@@ -305,7 +305,7 @@ public final class Fn {
      */
     @SuppressWarnings(JAVA_S119)
     @FunctionalInterface
-    interface FN12<U, T1, T2, T3, T4, T5, T6, T7, T8, T9, TA, TB, TC> {
+    public interface FN12<U, T1, T2, T3, T4, T5, T6, T7, T8, T9, TA, TB, TC> {
         @SuppressWarnings({ JAVA_S107 })
         U apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7, T8 param8, T9 param9,
                 TA param10, TB param11, TC param12);
@@ -321,7 +321,7 @@ public final class Fn {
      */
     @SuppressWarnings(JAVA_S119)
     @FunctionalInterface
-    interface FN13<U, T1, T2, T3, T4, T5, T6, T7, T8, T9, TA, TB, TC, TD> {
+    public interface FN13<U, T1, T2, T3, T4, T5, T6, T7, T8, T9, TA, TB, TC, TD> {
         @SuppressWarnings({ JAVA_S107 })
         U apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7, T8 param8, T9 param9,
                 TA param10, TB param11, TC param12, TD param13);
@@ -337,7 +337,7 @@ public final class Fn {
      */
     @SuppressWarnings(JAVA_S119)
     @FunctionalInterface
-    interface FN14<U, T1, T2, T3, T4, T5, T6, T7, T8, T9, TA, TB, TC, TD, TE> {
+    public interface FN14<U, T1, T2, T3, T4, T5, T6, T7, T8, T9, TA, TB, TC, TD, TE> {
         @SuppressWarnings({ JAVA_S107 })
         U apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7, T8 param8, T9 param9,
                 TA param10, TB param11, TC param12, TD param13, TE param14);
