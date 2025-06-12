@@ -8,8 +8,6 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-
-import eu.infolead.jtk.fp.Anomaly;
 import eu.infolead.jtk.fp.Mapper;
 import eu.infolead.jtk.fp.Provider;
 import eu.infolead.jtk.fp.either.Maybe.None;
@@ -50,7 +48,7 @@ public sealed interface Maybe<T> extends Either<Void, T> permits None, Some {
     }
 
     /**
-     * Same as {@link Maybe#of()}.
+     * Same as {@link Maybe#of(Object)}.
      * 
      * @param <U>   the type of the value
      * @param value the value. Must not be {@code null}.
@@ -227,16 +225,6 @@ public sealed interface Maybe<T> extends Either<Void, T> permits None, Some {
      */
     default Optional<T> toOptional() {
         return fold(v -> Optional.empty(), Optional::of);
-    }
-
-    /**
-     * Wraps the value of this{@link Maybe} in a {@link Result}.
-     * 
-     * @return an instance of {@link Result} wrapping the value of this
-     *         {@link Maybe}.
-     */
-    default Result<Void, T> toResult(final Anomaly anomaly) {
-        return fold(v -> Result.failure(null), Result::success);
     }
 
     @SafeVarargs

@@ -11,7 +11,6 @@ pkgs.mkShell {
     git
     google-java-format
     jdk
-    lorri
     maven
     niv
   ]; 
