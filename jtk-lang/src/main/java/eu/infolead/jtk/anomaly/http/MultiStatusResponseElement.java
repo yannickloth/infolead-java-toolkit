@@ -39,6 +39,12 @@ public record MultiStatusResponseElement(
     private static final Pattern STATUS_LINE = Pattern.compile("HTTP/\\d\\.\\d (\\d{3})(?: .*)?");
     private static final Pattern BARE_CODE = Pattern.compile("\\d{3}");
 
+    /**
+     * Canonical constructor with validation and status normalization.
+     *
+     * @param href   the hypertext reference of the affected resource
+     * @param status the status line or numeric status code
+     */
     public MultiStatusResponseElement {
         Objects.requireNonNull(href, "href");
         status = normalizeStatus(status);

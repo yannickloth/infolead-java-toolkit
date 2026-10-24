@@ -37,6 +37,12 @@ public non-sealed interface MultiStatusProblemDetail extends ProblemDetail {
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     record MultiStatus(@JsonProperty("response") List<MultiStatusResponseElement> response) {
+        /**
+         * Canonical constructor.
+         *
+         * @param response the per-resource responses; {@code null} becomes an
+         *                 empty list
+         */
         public MultiStatus {
             response = response == null ? List.of() : List.copyOf(response);
         }

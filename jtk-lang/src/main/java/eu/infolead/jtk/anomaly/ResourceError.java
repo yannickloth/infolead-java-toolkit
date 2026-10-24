@@ -1,6 +1,9 @@
 package eu.infolead.jtk.anomaly;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Objects;
 
 import eu.infolead.jtk.fp.either.Maybe;
@@ -18,9 +21,18 @@ public record ResourceError(
         String resourceType,
         ResourceErrorType errorType,
         Object[] contextArgs,
-        Maybe<Object> actualValue,
-        Maybe<String> errorId) implements SystemError {
+        @JsonIgnore Maybe<Object> actualValue,
+        @JsonIgnore Maybe<String> errorId) implements SystemError {
 
+    /**
+     * Canonical constructor with validation.
+     *
+     * @param resourceType the type of the affected resource
+     * @param errorType    the specific resource error type
+     * @param contextArgs  additional arguments for message formatting
+     * @param actualValue  the rejected value, if available
+     * @param errorId      the unique error instance identifier, if assigned
+     */
     public ResourceError {
         Objects.requireNonNull(resourceType, "resourceType cannot be null");
         Objects.requireNonNull(errorType, "errorType cannot be null");
@@ -30,6 +42,12 @@ public record ResourceError(
         contextArgs = contextArgs.clone();
     }
 
+    /**
+     * Convenience constructor without context args, actual value, or error ID.
+     *
+     * @param resourceType the type of the affected resource
+     * @param errorType    the specific resource error type
+     */
     public ResourceError(final String resourceType, final ResourceErrorType errorType) {
         this(resourceType, errorType, new Object[0], Maybe.none(), Maybe.none());
     }
@@ -41,10 +59,25 @@ public record ResourceError(
 
     @Override
     public String getMessage() {
-        final String baseMessage = contextArgs.length == 0
-                ? errorType.messageWithoutArgs()
-                : errorType.formatMessage(contextArgs);
-        return String.format("%s: %s", resourceType, baseMessage);
+        return String.format("%s: %s", resourceType, getTypeMessage());
+    }
+
+    /**
+     * Returns the message with the error-type text localized for the requested
+     * language; the resource type stays untranslated.
+     *
+     * <pre>{@code
+     * ResourceError.notFound("User", 7)
+     *         .getLocalizedMessage(Locale.GERMAN);
+     * // "User: Die angeforderte Ressource wurde nicht gefunden"
+     * }</pre>
+     *
+     * @param locale the requested locale; {@code null} means English
+     * @return the localized error message
+     */
+    @Override
+    public String getLocalizedMessage(final Locale locale) {
+        return String.format("%s: %s", resourceType, getLocalizedTypeMessage(locale));
     }
 
     @Override
@@ -52,6 +85,11 @@ public record ResourceError(
         return errorId;
     }
 
+    /**
+     * Returns a defensive copy of the message-format arguments.
+     *
+     * @return a copy of the context arguments
+     */
     @Override
     public Object[] contextArgs() {
         return contextArgs.clone();
@@ -112,11 +150,25 @@ public record ResourceError(
                 + ", errorId=" + errorId + "]";
     }
 
+    /**
+     * Creates an error for a missing resource.
+     *
+     * @param resourceType the resource type
+     * @param resourceId   the missing resource identifier
+     * @return the resource error
+     */
     public static ResourceError notFound(final String resourceType, final Object resourceId) {
         return new ResourceError(resourceType, ResourceErrorType.NOT_FOUND,
                 new Object[] { resourceId }, Maybe.ofNullable(resourceId), Maybe.none());
     }
 
+    /**
+     * Creates an error for a resource that already exists.
+     *
+     * @param resourceType the resource type
+     * @param resourceId   the existing resource identifier
+     * @return the resource error
+     */
     public static ResourceError alreadyExists(final String resourceType, final Object resourceId) {
         return new ResourceError(resourceType, ResourceErrorType.ALREADY_EXISTS,
                 new Object[] { resourceId }, Maybe.ofNullable(resourceId), Maybe.none());

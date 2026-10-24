@@ -48,6 +48,19 @@ class ErrorTypeTest {
     }
 
     @Test
+    void messageKeysAreUniqueAndNonBlank() {
+        final Set<String> keys = new HashSet<>();
+        for (final ErrorType type : allTypes()) {
+            final String key = type.getMessageKey();
+            assertTrue(key != null && !key.isBlank(),
+                    () -> "Blank message key for " + type.getCode());
+            assertTrue(keys.add(key),
+                    () -> "Duplicate message key '" + key + "' for " + type.getCode());
+        }
+        assertEquals(allTypes().size(), keys.size());
+    }
+
+    @Test
     void generatedErrorIdsAreUnique() {
         final ErrorType type = StandardErrorType.REQUIRED;
         final Set<String> ids = new HashSet<>();

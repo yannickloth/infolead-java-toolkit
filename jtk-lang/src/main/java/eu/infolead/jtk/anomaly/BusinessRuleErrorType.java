@@ -5,17 +5,39 @@ import eu.infolead.jtk.http.HttpStatusCode;
 
 import java.net.URI;
 
+/**
+ * Error types for business rule violations.
+ *
+ * <pre>{@code
+ * BusinessRuleError error = new BusinessRuleError(
+ *         "age restriction", BusinessRuleErrorType.AGE_RESTRICTION,
+ *         new Object[] { 18, 16 });
+ * ProblemDetail problem = error.toLocalizedProblemDetail(Locale.GERMAN);
+ * }</pre>
+ *
+ * @see BusinessRuleError
+ * @see ErrorType
+ */
 public enum BusinessRuleErrorType implements ErrorType {
 
+    /** The account does not have enough funds. */
     INSUFFICIENT_FUNDS(
         4001, "INSUFFICIENT_FUNDS", "Account %s has insufficient funds: requested %s, available %s",
             HttpStatus.UNPROCESSABLE_CONTENT.code(), "Unprocessable Content - Insufficient Funds",
         ErrorCategory.BUSINESS_LOGIC
     ),
 
+    /** The subject does not meet the minimum age. */
     AGE_RESTRICTION(
         4002, "AGE_RESTRICTION", "Minimum age %d required, actual age %d",
             HttpStatus.UNPROCESSABLE_CONTENT.code(), "Unprocessable Content - Age Restriction",
+        ErrorCategory.BUSINESS_LOGIC
+    ),
+
+    /** The operands use different currencies. */
+    CURRENCY_MISMATCH(
+        4003, "CURRENCY_MISMATCH", "Operation requires currency %s but received currency %s",
+            HttpStatus.UNPROCESSABLE_CONTENT.code(), "Unprocessable Content - Currency Mismatch",
         ErrorCategory.BUSINESS_LOGIC
     );
 

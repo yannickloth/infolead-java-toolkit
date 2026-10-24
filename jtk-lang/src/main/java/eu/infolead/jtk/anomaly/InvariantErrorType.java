@@ -4,14 +4,29 @@ import eu.infolead.jtk.http.HttpStatus;
 
 import java.net.URI;
 
+/**
+ * Error types for object and system invariant violations.
+ *
+ * <pre>{@code
+ * InvariantError error = new InvariantError(
+ *         "balance", InvariantErrorType.DATA_CORRUPTION,
+ *         new Object[] { "ledger mismatch" });
+ * boolean retry = error.isRetryable(); // false: critical integrity failure
+ * }</pre>
+ *
+ * @see InvariantError
+ * @see ErrorType
+ */
 public enum InvariantErrorType implements ErrorType {
 
+    /** An object violated one of its consistency rules. */
     OBJECT_CONSISTENCY(
         7001, "OBJECT_CONSISTENCY", "Object consistency violated: %s",
             HttpStatus.INTERNAL_SERVER_ERROR.code(), "Internal Server Error - Object Consistency Violated",
         ErrorCategory.CONTRACT
     ),
 
+    /** Stored data failed an integrity check. */
     DATA_CORRUPTION(
         7002, "DATA_CORRUPTION", "Data corruption detected: %s",
             HttpStatus.INTERNAL_SERVER_ERROR.code(), "Internal Server Error - Data Corruption",

@@ -1,6 +1,9 @@
 package eu.infolead.jtk.anomaly;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Objects;
 
 import eu.infolead.jtk.fp.either.Maybe;
@@ -19,9 +22,18 @@ public record BusinessRuleError(
         String rule,
         BusinessRuleErrorType errorType,
         Object[] contextArgs,
-        Maybe<Object> actualValue,
-        Maybe<String> errorId) implements SystemError {
+        @JsonIgnore Maybe<Object> actualValue,
+        @JsonIgnore Maybe<String> errorId) implements SystemError {
 
+    /**
+     * Canonical constructor with validation.
+     *
+     * @param rule        the business rule that was violated
+     * @param errorType   the specific business rule error type
+     * @param contextArgs additional arguments for message formatting
+     * @param actualValue the actual value, if available
+     * @param errorId     the unique error instance identifier, if assigned
+     */
     public BusinessRuleError {
         Objects.requireNonNull(rule, "rule cannot be null");
         Objects.requireNonNull(errorType, "errorType cannot be null");
@@ -31,6 +43,12 @@ public record BusinessRuleError(
         contextArgs = contextArgs.clone();
     }
 
+    /**
+     * Convenience constructor without context args, actual value, or error ID.
+     *
+     * @param rule      the business rule that was violated
+     * @param errorType the specific business rule error type
+     */
     public BusinessRuleError(final String rule, final BusinessRuleErrorType errorType) {
         this(rule, errorType, new Object[0], Maybe.none(), Maybe.none());
     }
@@ -42,7 +60,27 @@ public record BusinessRuleError(
 
     @Override
     public String getMessage() {
-        return String.format("Business rule '%s': %s", rule, errorType.formatMessage(contextArgs));
+        return String.format("Business rule '%s': %s", rule, getTypeMessage());
+    }
+
+    /**
+     * Returns the message with the error-type text localized for the requested
+     * language; the rule name is preserved verbatim inside a localized label.
+     *
+     * <pre>{@code
+     * BusinessRuleError.ageRestriction(18, 16)
+     *         .getLocalizedMessage(Locale.GERMAN);
+     * // "Geschäftsregel 'Age restriction': Mindestalter 18 ..."
+     * }</pre>
+     *
+     * @param locale the requested locale; {@code null} means English
+     * @return the localized error message
+     */
+    @Override
+    public String getLocalizedMessage(final Locale locale) {
+        final String label = ErrorLocalizer.of(locale)
+                .label("error.label.business-rule", "Business rule '%s'", rule);
+        return String.format("%s: %s", label, getLocalizedTypeMessage(locale));
     }
 
     @Override
@@ -50,6 +88,11 @@ public record BusinessRuleError(
         return errorId;
     }
 
+    /**
+     * Returns a defensive copy of the message-format arguments.
+     *
+     * @return a copy of the context arguments
+     */
     @Override
     public Object[] contextArgs() {
         return contextArgs.clone();
@@ -105,19 +148,55 @@ public record BusinessRuleError(
     public String toString() {
         return "BusinessRuleError[rule=" + rule
                 + ", errorType=" + errorType
-                + ", contextArgs=" + Arrays.toString(contextArgs)
-                + ", actualValue=" + actualValue
+                + ", contextArgs=" + SystemError.renderValue(contextArgs)
+                + ", actualValue=" + actualValue.fold(() -> "none", SystemError::renderValue)
                 + ", errorId=" + errorId + "]";
     }
 
+    /**
+     * Creates an error for insufficient funds.
+     *
+     * @param accountId       the account identifier
+     * @param requestedAmount the requested amount
+     * @param availableAmount the available amount
+     * @return the business rule error
+     */
     public static BusinessRuleError insufficientFunds(final String accountId, final Object requestedAmount,
             final Object availableAmount) {
         return new BusinessRuleError("Insufficient funds", BusinessRuleErrorType.INSUFFICIENT_FUNDS,
                 new Object[] { accountId, requestedAmount, availableAmount }, Maybe.none(), Maybe.none());
     }
 
+    /**
+     * Creates an error for an age restriction violation.
+     *
+     * @param minimumAge the minimum required age
+     * @param actualAge  the actual age
+     * @return the business rule error
+     */
     public static BusinessRuleError ageRestriction(final int minimumAge, final int actualAge) {
         return new BusinessRuleError("Age restriction", BusinessRuleErrorType.AGE_RESTRICTION,
                 new Object[] { minimumAge, actualAge }, Maybe.none(), Maybe.none());
+    }
+
+    /**
+     * Creates an error for a monetary operation that received amounts in two
+     * different currencies, such as adding a EUR amount to a USD amount:
+     *
+     * <pre>{@code
+     * BusinessRuleError error = BusinessRuleError.currencyMismatch("EUR", "USD");
+     * // CURRENCY_MISMATCH (4003), HTTP 422
+     * }</pre>
+     *
+     * @param expectedCurrency the currency the operation requires, such as
+     *                         {@code EUR}
+     * @param actualCurrency   the currency of the rejected amount, such as
+     *                         {@code USD}
+     * @return the currency mismatch error
+     */
+    public static BusinessRuleError currencyMismatch(final Object expectedCurrency,
+            final Object actualCurrency) {
+        return new BusinessRuleError("Currency mismatch", BusinessRuleErrorType.CURRENCY_MISMATCH,
+                new Object[] { expectedCurrency, actualCurrency }, Maybe.none(), Maybe.none());
     }
 }

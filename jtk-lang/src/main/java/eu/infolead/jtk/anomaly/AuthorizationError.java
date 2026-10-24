@@ -1,6 +1,9 @@
 package eu.infolead.jtk.anomaly;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Objects;
 
 import eu.infolead.jtk.fp.either.Maybe;
@@ -18,9 +21,18 @@ public record AuthorizationError(
         String requirement,
         AuthorizationErrorType errorType,
         Object[] contextArgs,
-        Maybe<Object> actualValue,
-        Maybe<String> errorId) implements SystemError {
+        @JsonIgnore Maybe<Object> actualValue,
+        @JsonIgnore Maybe<String> errorId) implements SystemError {
 
+    /**
+     * Canonical constructor with validation.
+     *
+     * @param requirement the access requirement that was not met
+     * @param errorType   the specific authorization error type
+     * @param contextArgs additional arguments for message formatting
+     * @param actualValue the actual value, if available
+     * @param errorId     the unique error instance identifier, if assigned
+     */
     public AuthorizationError {
         Objects.requireNonNull(requirement, "requirement cannot be null");
         Objects.requireNonNull(errorType, "errorType cannot be null");
@@ -30,10 +42,23 @@ public record AuthorizationError(
         contextArgs = contextArgs.clone();
     }
 
+    /**
+     * Convenience constructor without context args, actual value, or error ID.
+     *
+     * @param requirement the access requirement that was not met
+     * @param errorType   the specific authorization error type
+     */
     public AuthorizationError(final String requirement, final AuthorizationErrorType errorType) {
         this(requirement, errorType, new Object[0], Maybe.none(), Maybe.none());
     }
 
+    /**
+     * Convenience constructor with one message-format argument.
+     *
+     * @param requirement the access requirement that was not met
+     * @param errorType   the specific authorization error type
+     * @param contextArg  the argument substituted into the message template
+     */
     public AuthorizationError(final String requirement, final AuthorizationErrorType errorType,
             final String contextArg) {
         this(requirement, errorType, new Object[] { contextArg }, Maybe.none(), Maybe.none());
@@ -46,7 +71,28 @@ public record AuthorizationError(
 
     @Override
     public String getMessage() {
-        return String.format("Authorization: %s", errorType.formatMessage(contextArgs));
+        return String.format("Authorization: %s", getTypeMessage());
+    }
+
+    /**
+     * Returns the message with the error-type text localized for the requested
+     * language; the authorization label is localized too, while the
+     * requirement itself stays untranslated.
+     *
+     * <pre>{@code
+     * AuthorizationError.notAuthenticated()
+     *         .getLocalizedMessage(Locale.FRENCH);
+     * // "Autorisation: Authentification requise"
+     * }</pre>
+     *
+     * @param locale the requested locale; {@code null} means English
+     * @return the localized error message
+     */
+    @Override
+    public String getLocalizedMessage(final Locale locale) {
+        final String label = ErrorLocalizer.of(locale)
+                .label("error.label.authorization", "Authorization");
+        return String.format("%s: %s", label, getLocalizedTypeMessage(locale));
     }
 
     @Override
@@ -54,6 +100,11 @@ public record AuthorizationError(
         return errorId;
     }
 
+    /**
+     * Returns a defensive copy of the message-format arguments.
+     *
+     * @return a copy of the context arguments
+     */
     @Override
     public Object[] contextArgs() {
         return contextArgs.clone();
@@ -109,15 +160,26 @@ public record AuthorizationError(
     public String toString() {
         return "AuthorizationError[requirement=" + requirement
                 + ", errorType=" + errorType
-                + ", contextArgs=" + Arrays.toString(contextArgs)
-                + ", actualValue=" + actualValue
+                + ", contextArgs=" + SystemError.renderValue(contextArgs)
+                + ", actualValue=" + actualValue.fold(() -> "none", SystemError::renderValue)
                 + ", errorId=" + errorId + "]";
     }
 
+    /**
+     * Creates an error for a missing authentication.
+     *
+     * @return the authorization error
+     */
     public static AuthorizationError notAuthenticated() {
         return new AuthorizationError("Authentication required", AuthorizationErrorType.NOT_AUTHENTICATED);
     }
 
+    /**
+     * Creates an error for insufficient permissions.
+     *
+     * @param requiredRole the role required by the operation
+     * @return the authorization error
+     */
     public static AuthorizationError insufficientPermissions(final String requiredRole) {
         return new AuthorizationError("Insufficient permissions",
                 AuthorizationErrorType.INSUFFICIENT_PERMISSIONS, requiredRole);

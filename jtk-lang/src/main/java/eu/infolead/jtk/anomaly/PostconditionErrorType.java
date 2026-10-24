@@ -7,9 +7,19 @@ import java.net.URI;
 /**
  * Error types for postcondition failures - system failed to achieve expected state.
  * These typically map to HTTP 5xx status codes (server errors).
+ *
+ * <pre>{@code
+ * PostconditionError error = PostconditionError.persistenceFailed("Order", 42);
+ * boolean retryable = error.isRetryable();          // true: transient failure
+ * Maybe<Long> delay = error.retryAfterSeconds();    // e.g. Maybe.of(5L) on 503
+ * }</pre>
+ *
+ * @see PostconditionError
+ * @see ErrorType
  */
 public enum PostconditionErrorType implements ErrorType {
 
+    /** The expected state was not reached. */
     EXPECTED_STATE_NOT_REACHED(
         3001,
         "EXPECTED_STATE_NOT_REACHED",
@@ -19,6 +29,7 @@ public enum PostconditionErrorType implements ErrorType {
         ErrorCategory.CONTRACT
     ),
 
+    /** An invariant was violated. */
     INVARIANT_VIOLATED(
         3002,
         "INVARIANT_VIOLATED",
@@ -28,6 +39,7 @@ public enum PostconditionErrorType implements ErrorType {
         ErrorCategory.CONTRACT
     ),
 
+    /** A required side effect failed. */
     SIDE_EFFECT_FAILED(
         3003,
         "SIDE_EFFECT_FAILED",
@@ -37,6 +49,7 @@ public enum PostconditionErrorType implements ErrorType {
         ErrorCategory.SYSTEM
     ),
 
+    /** Data persistence failed. */
     PERSISTENCE_FAILED(
         3004,
         "PERSISTENCE_FAILED",
@@ -46,6 +59,7 @@ public enum PostconditionErrorType implements ErrorType {
         ErrorCategory.SYSTEM
     ),
 
+    /** A notification could not be delivered. */
     NOTIFICATION_FAILED(
         3005,
         "NOTIFICATION_FAILED",
@@ -55,6 +69,7 @@ public enum PostconditionErrorType implements ErrorType {
         ErrorCategory.EXTERNAL_SERVICE
     ),
 
+    /** A data consistency rule was violated. */
     CONSISTENCY_VIOLATED(
         3006,
         "CONSISTENCY_VIOLATED",
@@ -64,6 +79,7 @@ public enum PostconditionErrorType implements ErrorType {
         ErrorCategory.CONTRACT
     ),
 
+    /** An external integration failed. */
     INTEGRATION_FAILED(
         3007,
         "INTEGRATION_FAILED",
@@ -73,6 +89,7 @@ public enum PostconditionErrorType implements ErrorType {
         ErrorCategory.EXTERNAL_SERVICE
     ),
 
+    /** A transaction was rolled back. */
     TRANSACTION_ROLLBACK(
         3008,
         "TRANSACTION_ROLLBACK",
@@ -82,6 +99,7 @@ public enum PostconditionErrorType implements ErrorType {
         ErrorCategory.SYSTEM
     ),
 
+    /** An asynchronous operation failed. */
     ASYNC_OPERATION_FAILED(
         3009,
         "ASYNC_OPERATION_FAILED",
@@ -91,6 +109,7 @@ public enum PostconditionErrorType implements ErrorType {
         ErrorCategory.SYSTEM
     ),
 
+    /** Resource cleanup failed. */
     RESOURCE_CLEANUP_FAILED(
         3010,
         "RESOURCE_CLEANUP_FAILED",
@@ -154,9 +173,26 @@ public enum PostconditionErrorType implements ErrorType {
         return category;
     }
 
+    /**
+     * Returns the severity of this postcondition failure.
+     *
+     * <p>Contract failures indicate a programming error and are
+     * {@link ErrorSeverity#CRITICAL}. Infrastructure failures (persistence,
+     * side effects, notification, integration, async work, cleanup) are
+     * {@link ErrorSeverity#ERROR}: the operation failed, but a retry can
+     * succeed, which is what {@link ErrorType#isRetryable()} reports.</p>
+     *
+     * <pre>{@code
+     * PostconditionErrorType.PERSISTENCE_FAILED.getSeverity(); // ERROR
+     * PostconditionErrorType.INVARIANT_VIOLATED.getSeverity(); // CRITICAL
+     * }</pre>
+     *
+     * @return the severity of this error type
+     */
     @Override
     public ErrorSeverity getSeverity() {
-        // Postcondition failures are typically critical as they indicate system malfunction
-        return ErrorSeverity.CRITICAL;
+        return category == ErrorCategory.CONTRACT
+                ? ErrorSeverity.CRITICAL
+                : ErrorSeverity.ERROR;
     }
 }

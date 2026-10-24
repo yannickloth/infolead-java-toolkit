@@ -7,9 +7,19 @@ import java.net.URI;
 /**
  * Error types for precondition failures - system not in correct state for operation.
  * These typically map to HTTP 4xx status codes (client errors).
+ *
+ * <pre>{@code
+ * PreconditionError error = PreconditionError.rateLimitExceeded("100/min");
+ * boolean retryable = error.isRetryable();       // true: HTTP 429
+ * Maybe<String> header = error.retryAfterHeader(); // Maybe.of("1")
+ * }</pre>
+ *
+ * @see PreconditionError
+ * @see ErrorType
  */
 public enum PreconditionErrorType implements ErrorType {
 
+    /** The system is not ready for the operation. */
     SYSTEM_NOT_READY(
         2001,
         "SYSTEM_NOT_READY",
@@ -19,6 +29,7 @@ public enum PreconditionErrorType implements ErrorType {
         ErrorCategory.SYSTEM
     ),
 
+    /** The operation conflicts with the current state. */
     CONFLICTING_STATE(
         2002,
         "CONFLICTING_STATE",
@@ -28,6 +39,7 @@ public enum PreconditionErrorType implements ErrorType {
         ErrorCategory.BUSINESS_LOGIC
     ),
 
+    /** The caller lacks a required permission. */
     INSUFFICIENT_PERMISSIONS(
         2003,
         "INSUFFICIENT_PERMISSIONS",
@@ -37,6 +49,7 @@ public enum PreconditionErrorType implements ErrorType {
         ErrorCategory.SECURITY
     ),
 
+    /** The resource is currently locked. */
     RESOURCE_LOCKED(
         2004,
         "RESOURCE_LOCKED",
@@ -46,6 +59,7 @@ public enum PreconditionErrorType implements ErrorType {
         ErrorCategory.RESOURCE
     ),
 
+    /** The operation is not allowed in the current state. */
     OPERATION_NOT_ALLOWED(
         2005,
         "OPERATION_NOT_ALLOWED",
@@ -55,6 +69,7 @@ public enum PreconditionErrorType implements ErrorType {
         ErrorCategory.BUSINESS_LOGIC
     ),
 
+    /** A rate limit was exceeded. */
     RATE_LIMIT_EXCEEDED(
         2006,
         "RATE_LIMIT_EXCEEDED",
@@ -64,6 +79,7 @@ public enum PreconditionErrorType implements ErrorType {
         ErrorCategory.RATE_LIMIT
     ),
 
+    /** The system is in maintenance mode. */
     MAINTENANCE_MODE(
         2007,
         "MAINTENANCE_MODE",
@@ -73,6 +89,7 @@ public enum PreconditionErrorType implements ErrorType {
         ErrorCategory.SYSTEM
     ),
 
+    /** A required dependency is unavailable. */
     DEPENDENCY_UNAVAILABLE(
         2008,
         "DEPENDENCY_UNAVAILABLE",
@@ -82,6 +99,7 @@ public enum PreconditionErrorType implements ErrorType {
         ErrorCategory.EXTERNAL_SERVICE
     ),
 
+    /** A precondition failed. */
     PRECONDITION_FAILED(
         2009,
         "PRECONDITION_FAILED",

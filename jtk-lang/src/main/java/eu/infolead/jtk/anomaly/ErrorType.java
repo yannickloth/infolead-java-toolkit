@@ -1,12 +1,14 @@
 package eu.infolead.jtk.anomaly;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.Locale;
 import java.util.Objects;
 
 import eu.infolead.jtk.anomaly.http.ProblemDetail;
 import eu.infolead.jtk.anomaly.http.StandardProblemDetail;
 import eu.infolead.jtk.fp.either.Maybe;
+import eu.infolead.jtk.http.HttpStatus;
 import eu.infolead.jtk.http.HttpStatusCode;
 
 /**
@@ -15,6 +17,20 @@ import eu.infolead.jtk.http.HttpStatusCode;
  * 
  * <p>This interface allows different projects to define their own error types
  * while maintaining consistency in error handling and HTTP response generation.</p>
+ *
+ * <h2>Localization and retry metadata</h2>
+ *
+ * <pre>{@code
+ * ErrorType type = StandardErrorType.TOO_MANY_REQUESTS;
+ * type.getMessageKey();        // "error.rate-limit.standard.too-many-requests"
+ * type.isRetryable();          // true
+ * type.retryAfter();           // Maybe.of(Duration.ofSeconds(1))
+ *
+ * ProblemDetail french = type.toProblemDetail(
+ *         Maybe.none(),
+ *         Maybe.none(),
+ *         ErrorLocalizer.acceptLanguage("fr-FR,fr;q=0.9"));
+ * }</pre>
  */
 public interface ErrorType {
 
@@ -68,8 +84,9 @@ public interface ErrorType {
     /**
      * Returns the HTTP status code associated with this error type.
      * 
+     * <p><em>TODO:</em> Use {@link HttpStatusCode} instead of an {@code int}.</p>
+     *
      * @return the HTTP status code (e.g., 400, 404, 500)
-     * @TODO use the HttpStatusCode type instead of an int.
      */
     int getHttpStatus();
 
@@ -88,6 +105,51 @@ public interface ErrorType {
      * @return the problem title
      */
     String getProblemTitle();
+
+    /**
+     * Returns the stable localization key for this error type.
+     *
+     * <p>The key is derived from the problem type URI so that equal codes in
+     * different namespaces never collide. For example
+     * {@code .../problems/validation/parameter/null-parameter} becomes
+     * {@code error.validation.parameter.null-parameter}. Translators add
+     * {@code <key>.title} and {@code <key>.message} entries to the error
+     * resource bundle; missing entries fall back to
+     * {@link #getProblemTitle()} and {@link #getMessageTemplate()}.</p>
+     *
+     * <pre>{@code
+     * ParameterErrorType.NULL_PARAMETER.getMessageKey();
+     * // "error.validation.parameter.null-parameter"
+     * }</pre>
+     *
+     * @return the stable message key
+     */
+    default String getMessageKey() {
+        final URI problemType = getProblemType();
+        final String path = problemType == null ? null : problemType.getPath();
+        final String prefix = "/problems/";
+        if (path != null && path.startsWith(prefix) && path.length() > prefix.length()) {
+            return "error." + path.substring(prefix.length()).replace('/', '.');
+        }
+        return "error."
+                + getCategory().name().toLowerCase(Locale.ROOT).replace('_', '-')
+                + "." + getCode().toLowerCase(Locale.ROOT).replace('_', '-');
+    }
+
+    /**
+     * Returns the localized problem title.
+     *
+     * <pre>{@code
+     * StandardErrorType.REQUIRED.getLocalizedProblemTitle(Locale.FRENCH);
+     * // "Champ obligatoire manquant"
+     * }</pre>
+     *
+     * @param locale the requested locale; {@code null} means English
+     * @return the localized title, or the built-in English title
+     */
+    default String getLocalizedProblemTitle(final Locale locale) {
+        return ErrorLocalizer.of(locale).title(this);
+    }
 
     /**
      * Indicates whether this is a client error (4xx) or server error (5xx).
@@ -109,12 +171,51 @@ public interface ErrorType {
 
     /**
      * Indicates whether this error type should be retried.
-     * Typically true for server errors, false for client errors.
-     * 
+     *
+     * <p>Server errors are retryable, as is HTTP {@code 429 Too Many Requests}:
+     * the latter is a client error by status class, but the same request can
+     * succeed after the indicated delay. Deterministic programming failures
+     * ({@link ErrorCategory#CONTRACT}) and critical integrity failures are not
+     * retryable, because repeating the request cannot make them succeed.</p>
+     *
+     * <pre>{@code
+     * StandardErrorType.TOO_MANY_REQUESTS.isRetryable(); // true
+     * InvariantErrorType.DATA_CORRUPTION.isRetryable();  // false
+     * }</pre>
+     *
      * @return true if the operation should be retried
      */
     default boolean isRetryable() {
-        return isServerError();
+        return (isServerError()
+                && getCategory() != ErrorCategory.CONTRACT
+                && getSeverity() != ErrorSeverity.CRITICAL)
+                || getHttpStatus() == HttpStatus.TOO_MANY_REQUESTS.code();
+    }
+
+    /**
+     * Returns the recommended delay before retrying an operation that failed
+     * with this error type.
+     *
+     * <p>Rate-limited requests suggest one second and unavailable services
+     * suggest five seconds. Other error types have no suggestion. A concrete
+     * error can override this value with
+     * {@link SystemError#withRetryAfter(Duration)}.</p>
+     *
+     * <pre>{@code
+     * PreconditionErrorType.RATE_LIMIT_EXCEEDED.retryAfter();
+     * // Maybe.of(Duration.ofSeconds(1))
+     * }</pre>
+     *
+     * @return the suggested retry delay, or {@link Maybe#none()}
+     */
+    default Maybe<Duration> retryAfter() {
+        if (getHttpStatus() == HttpStatus.TOO_MANY_REQUESTS.code()) {
+            return Maybe.of(Duration.ofSeconds(1));
+        }
+        if (getHttpStatus() == HttpStatus.SERVICE_UNAVAILABLE.code()) {
+            return Maybe.of(Duration.ofSeconds(5));
+        }
+        return Maybe.none();
     }
 
     /**
@@ -137,25 +238,65 @@ public interface ErrorType {
     /**
      * Formats the error message with the provided arguments.
      * <p>
-     * When no arguments are supplied, the raw template is returned. If the
-     * template cannot be formatted with the supplied arguments, the raw template
-     * is returned instead: error reporting must not mask the original failure by
-     * throwing from a logging or response-building path.
+     * Arguments are passed through {@link RedactionPolicy#standard()}: explicit
+     * {@link Sensitive} wrappers and credential-shaped map entries are replaced
+     * with {@link Sensitive#REDACTED} before formatting, so a message can never
+     * echo a secret. When no arguments are supplied, the raw template is
+     * returned.
+     * <p>
+     * If the redacted arguments cannot be formatted (for example a sensitive
+     * number passed to a {@code %d} specifier), the message falls back to
+     * {@link #messageWithoutArgs()} rather than returning the raw template:
+     * placeholders must not leak into logs or responses.
+     *
+     * <pre>{@code
+     * StandardErrorType.TOO_LONG.formatMessage(70);
+     * // "Field exceeds maximum length of 70 characters"
+     *
+     * ParameterErrorType.INVALID_FORMAT.formatMessage(Sensitive.of("hunter2"));
+     * // "Field has invalid format [REDACTED]" (never the raw value)
+     * }</pre>
      *
      * @param args arguments to substitute in the message template
-     * @return the formatted error message, or the raw template when formatting
-     *         fails
+     * @return the formatted error message; the raw template when no arguments
+     *         are given; the argument-free message when formatting fails
      */
     default String formatMessage(final Object... args) {
         Objects.requireNonNull(args, "args");
         if (args.length == 0) {
             return getMessageTemplate();
         }
-        try {
-            return String.format(getMessageTemplate(), args);
-        } catch (final RuntimeException exception) {
-            return getMessageTemplate();
+        final Object[] redacted = RedactionPolicy.standard().redactAll(args);
+        boolean redactionChangedAnArgument = false;
+        for (int index = 0; index < args.length; index++) {
+            if (args[index] != redacted[index]) {
+                redactionChangedAnArgument = true;
+                break;
+            }
         }
+        try {
+            return String.format(Locale.ENGLISH, getMessageTemplate(), redacted);
+        } catch (final RuntimeException exception) {
+            return redactionChangedAnArgument ? messageWithoutArgs() : getMessageTemplate();
+        }
+    }
+
+    /**
+     * Formats the localized message template with the provided arguments.
+     *
+     * <pre>{@code
+     * ParameterErrorType.OUT_OF_RANGE.formatLocalizedMessage(
+     *         Locale.FRENCH, 0, 150);
+     * // "La valeur du paramètre doit être comprise entre 0 et 150"
+     * }</pre>
+     *
+     * @param locale the requested locale; {@code null} means English
+     * @param args   arguments to substitute in the message template
+     * @return the localized message, or the localized template when formatting
+     *         fails
+     */
+    default String formatLocalizedMessage(final Locale locale, final Object... args) {
+        return ErrorLocalizer.of(locale).formatMessage(this, args);
     }
 
     /**
@@ -174,6 +315,17 @@ public interface ErrorType {
     }
 
     /**
+     * Returns a localized message for the case where no context arguments are
+     * available.
+     *
+     * @param locale the requested locale; {@code null} means English
+     * @return a localized message without unresolved format specifiers
+     */
+    default String localizedMessageWithoutArgs(final Locale locale) {
+        return ErrorLocalizer.of(locale).messageWithoutArgs(this);
+    }
+
+    /**
      * Creates a StandardProblemDetail from this error type.
      * 
      * @param detail optional detailed explanation
@@ -181,13 +333,34 @@ public interface ErrorType {
      * @return a ProblemDetail representing this error
      */
     default ProblemDetail toProblemDetail(final Maybe<String> detail, final Maybe<URI> instance) {
+        return toProblemDetail(detail, instance, ErrorLocalizer.english());
+    }
+
+    /**
+     * Creates a localized StandardProblemDetail from this error type.
+     *
+     * <pre>{@code
+     * ProblemDetail problem = StandardErrorType.REQUIRED.toProblemDetail(
+     *         Maybe.some("name is required"),
+     *         Maybe.some(URI.create("/requests/42")),
+     *         ErrorLocalizer.acceptLanguage("fr"));
+     * }</pre>
+     *
+     * @param detail    optional detailed explanation
+     * @param instance  optional instance URI
+     * @param localizer the resolver for title and message translation
+     * @return a ProblemDetail representing this error
+     */
+    default ProblemDetail toProblemDetail(final Maybe<String> detail, final Maybe<URI> instance,
+            final ErrorLocalizer localizer) {
         Objects.requireNonNull(detail, "detail");
         Objects.requireNonNull(instance, "instance");
+        Objects.requireNonNull(localizer, "localizer");
         if (!HttpStatusCode.isValid(getHttpStatus()).toBoolean()) {
             throw new IllegalStateException("Invalid HTTP status " + getHttpStatus() + " for error type " + getCode());
         }
         return StandardProblemDetail.builder(getProblemType())
-            .title(getProblemTitle())
+            .title(localizer.title(this))
             .status(getHttpStatus())
             .detail(detail.orNull())
             .instance(instance.orNull())

@@ -5,9 +5,19 @@ import java.net.URI;
 /**
  * Error types for parameter validation failures.
  * All parameter errors map to HTTP 400 Bad Request status.
+ *
+ * <pre>{@code
+ * ParameterError error = ParameterError.withActualValue(
+ *         "age", ParameterErrorType.OUT_OF_RANGE, 42);
+ * ProblemDetail problem = error.toProblemDetail(Maybe.some(URI.create("/users/1")));
+ * }</pre>
+ *
+ * @see ParameterError
+ * @see ErrorType
  */
 public enum ParameterErrorType implements ErrorType {
 
+    /** A required parameter is {@code null}. */
     NULL_PARAMETER(
         1001,
         "NULL_PARAMETER",
@@ -17,6 +27,7 @@ public enum ParameterErrorType implements ErrorType {
         ErrorCategory.VALIDATION
     ),
 
+    /** A parameter value is outside its permitted range. */
     OUT_OF_RANGE(
         1002,
         "OUT_OF_RANGE",
@@ -26,6 +37,7 @@ public enum ParameterErrorType implements ErrorType {
         ErrorCategory.VALIDATION
     ),
 
+    /** A parameter does not match its required format. */
     INVALID_FORMAT(
         1003,
         "INVALID_FORMAT",
@@ -35,6 +47,7 @@ public enum ParameterErrorType implements ErrorType {
         ErrorCategory.VALIDATION
     ),
 
+    /** A parameter exceeds its maximum length. */
     TOO_LONG(
         1004,
         "TOO_LONG",
@@ -44,6 +57,7 @@ public enum ParameterErrorType implements ErrorType {
         ErrorCategory.VALIDATION
     ),
 
+    /** A parameter is shorter than its minimum length. */
     TOO_SHORT(
         1005,
         "TOO_SHORT",
@@ -53,6 +67,7 @@ public enum ParameterErrorType implements ErrorType {
         ErrorCategory.VALIDATION
     ),
 
+    /** A required parameter is empty. */
     EMPTY(
         1006,
         "EMPTY",
@@ -62,6 +77,7 @@ public enum ParameterErrorType implements ErrorType {
         ErrorCategory.VALIDATION
     ),
 
+    /** A parameter value is not supported. */
     UNSUPPORTED_VALUE(
         1007,
         "UNSUPPORTED_VALUE",
@@ -71,6 +87,7 @@ public enum ParameterErrorType implements ErrorType {
         ErrorCategory.VALIDATION
     ),
 
+    /** A combination of parameters is invalid. */
     INVALID_COMBINATION(
         1008,
         "INVALID_COMBINATION",

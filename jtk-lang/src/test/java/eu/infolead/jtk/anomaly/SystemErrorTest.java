@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -138,6 +140,11 @@ class SystemErrorTest {
         };
         assertEquals("<unrenderable " + broken.getClass().getName() + ">",
                 SystemError.renderValue(broken));
+
+        assertEquals("{password=[REDACTED]}",
+                SystemError.renderValue(Map.of("password", "hunter2")));
+        assertEquals("[a, [REDACTED]]",
+                SystemError.renderValue(List.of("a", Sensitive.of("hunter2"))));
     }
 
     @Test

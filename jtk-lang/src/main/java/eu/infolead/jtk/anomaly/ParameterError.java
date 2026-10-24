@@ -1,6 +1,9 @@
 package eu.infolead.jtk.anomaly;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Objects;
 
 import eu.infolead.jtk.fp.either.Maybe;
@@ -19,12 +22,18 @@ public record ParameterError(
         String parameterName,
         ParameterErrorType errorType,
         Object[] contextArgs,
-        Maybe<Object> actualValue,
-        Maybe<String> errorId) implements SystemError {
+        @JsonIgnore Maybe<Object> actualValue,
+        @JsonIgnore Maybe<String> errorId) implements SystemError {
 
     /**
      * Canonical constructor with validation. The context array is copied so that
      * later modifications by the caller cannot change this error.
+     *
+     * @param parameterName the name of the invalid parameter
+     * @param errorType     the specific parameter error type
+     * @param contextArgs   additional arguments for message formatting
+     * @param actualValue   the rejected value, if available
+     * @param errorId       the unique error instance identifier, if assigned
      */
     public ParameterError {
         Objects.requireNonNull(parameterName, "parameterName cannot be null");
@@ -37,6 +46,9 @@ public record ParameterError(
 
     /**
      * Convenience constructor without context args, actual value, or error ID.
+     *
+     * @param parameterName the name of the invalid parameter
+     * @param errorType     the specific parameter error type
      */
     public ParameterError(final String parameterName, final ParameterErrorType errorType) {
         this(parameterName, errorType, new Object[0], Maybe.none(), Maybe.none());
@@ -47,6 +59,10 @@ public record ParameterError(
      * <p>
      * Every argument is a message-format argument. Use the canonical constructor
      * when the third argument is the rejected value itself.
+     *
+     * @param parameterName the name of the invalid parameter
+     * @param errorType     the specific parameter error type
+     * @param contextArgs   arguments substituted into the message template
      */
     public ParameterError(final String parameterName, final ParameterErrorType errorType,
             final Object... contextArgs) {
@@ -74,10 +90,25 @@ public record ParameterError(
 
     @Override
     public String getMessage() {
-        final String baseMessage = contextArgs.length == 0
-                ? errorType.messageWithoutArgs()
-                : errorType.formatMessage(contextArgs);
-        return String.format("%s: %s", parameterName, baseMessage);
+        return String.format("%s: %s", parameterName, getTypeMessage());
+    }
+
+    /**
+     * Returns the message with the error-type text localized for the requested
+     * language; the parameter name stays untranslated.
+     *
+     * <pre>{@code
+     * ParameterError.nullParameter("userId")
+     *         .getLocalizedMessage(Locale.FRENCH);
+     * // "userId: Le paramètre ne peut pas être nul"
+     * }</pre>
+     *
+     * @param locale the requested locale; {@code null} means English
+     * @return the localized error message
+     */
+    @Override
+    public String getLocalizedMessage(final Locale locale) {
+        return String.format("%s: %s", parameterName, getLocalizedTypeMessage(locale));
     }
 
     @Override
@@ -85,6 +116,11 @@ public record ParameterError(
         return errorId;
     }
 
+    /**
+     * Returns a defensive copy of the message-format arguments.
+     *
+     * @return a copy of the context arguments
+     */
     @Override
     public Object[] contextArgs() {
         return contextArgs.clone();
@@ -140,8 +176,8 @@ public record ParameterError(
     public String toString() {
         return "ParameterError[parameterName=" + parameterName
                 + ", errorType=" + errorType
-                + ", contextArgs=" + Arrays.toString(contextArgs)
-                + ", actualValue=" + actualValue
+                + ", contextArgs=" + SystemError.renderValue(contextArgs)
+                + ", actualValue=" + actualValue.fold(() -> "none", SystemError::renderValue)
                 + ", errorId=" + errorId + "]";
     }
 
@@ -149,6 +185,9 @@ public record ParameterError(
 
     /**
      * Creates a parameter error for a null parameter.
+     *
+     * @param parameterName the name of the null parameter
+     * @return the parameter error
      */
     public static ParameterError nullParameter(final String parameterName) {
         return new ParameterError(parameterName, ParameterErrorType.NULL_PARAMETER);
@@ -156,6 +195,12 @@ public record ParameterError(
 
     /**
      * Creates a parameter error for an out-of-range value.
+     *
+     * @param parameterName the parameter name
+     * @param actualValue   the rejected value
+     * @param min           the inclusive minimum
+     * @param max           the inclusive maximum
+     * @return the parameter error
      */
     public static ParameterError outOfRange(final String parameterName, final Object actualValue,
             final Object min, final Object max) {
@@ -165,6 +210,10 @@ public record ParameterError(
 
     /**
      * Creates a parameter error for an invalid format.
+     *
+     * @param parameterName the parameter name
+     * @param actualValue   the rejected value
+     * @return the parameter error
      */
     public static ParameterError invalidFormat(final String parameterName, final Object actualValue) {
         return new ParameterError(parameterName, ParameterErrorType.INVALID_FORMAT,
@@ -173,6 +222,11 @@ public record ParameterError(
 
     /**
      * Creates a parameter error for a value that's too long.
+     *
+     * @param parameterName the parameter name
+     * @param actualValue   the rejected value
+     * @param maxLength     the maximum permitted length
+     * @return the parameter error
      */
     public static ParameterError tooLong(final String parameterName, final Object actualValue,
             final int maxLength) {
@@ -182,6 +236,11 @@ public record ParameterError(
 
     /**
      * Creates a parameter error for a value that's too short.
+     *
+     * @param parameterName the parameter name
+     * @param actualValue   the rejected value
+     * @param minLength     the minimum permitted length
+     * @return the parameter error
      */
     public static ParameterError tooShort(final String parameterName, final Object actualValue,
             final int minLength) {
@@ -192,6 +251,9 @@ public record ParameterError(
     /**
      * Creates a parameter error for an empty collection/array when non-empty
      * required.
+     *
+     * @param parameterName the parameter name
+     * @return the parameter error
      */
     public static ParameterError empty(final String parameterName) {
         return new ParameterError(parameterName, ParameterErrorType.EMPTY);
@@ -199,6 +261,10 @@ public record ParameterError(
 
     /**
      * Creates a parameter error for an unsupported value.
+     *
+     * @param parameterName the parameter name
+     * @param actualValue   the unsupported value
+     * @return the parameter error
      */
     public static ParameterError unsupportedValue(final String parameterName, final Object actualValue) {
         return new ParameterError(parameterName, ParameterErrorType.UNSUPPORTED_VALUE,

@@ -4,14 +4,28 @@ import eu.infolead.jtk.http.HttpStatus;
 
 import java.net.URI;
 
+/**
+ * Error types for authentication and authorization failures.
+ *
+ * <pre>{@code
+ * AuthorizationError error = new AuthorizationError(
+ *         "admin role", AuthorizationErrorType.INSUFFICIENT_PERMISSIONS);
+ * ProblemDetail problem = error.toProblemDetail();
+ * }</pre>
+ *
+ * @see AuthorizationError
+ * @see ErrorType
+ */
 public enum AuthorizationErrorType implements ErrorType {
 
+    /** No authenticated principal was supplied. */
     NOT_AUTHENTICATED(
         5001, "NOT_AUTHENTICATED", "Authentication required",
             HttpStatus.UNAUTHORIZED.code(), "Unauthorized",
         ErrorCategory.SECURITY
     ),
 
+    /** The authenticated principal lacks a required permission. */
     INSUFFICIENT_PERMISSIONS(
         5002, "INSUFFICIENT_PERMISSIONS", "Insufficient permissions: %s required", 
         HttpStatus.FORBIDDEN.code(), "Forbidden",

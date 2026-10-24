@@ -7,10 +7,21 @@ import java.net.URI;
 /**
  * Standard error types covering common validation and application errors.
  * These can be used directly or serve as examples for custom error type enums.
+ *
+ * <pre>{@code
+ * ProblemDetail problem = StandardErrorType.TOO_MANY_REQUESTS.toProblemDetail(
+ *         Maybe.some("rate limit exceeded"),
+ *         Maybe.none(),
+ *         ErrorLocalizer.acceptLanguage("fr-FR"));
+ * assertEquals(429, problem.getStatusValue());
+ * }</pre>
+ *
+ * @see ErrorType
  */
 public enum StandardErrorType implements ErrorType {
 
     // Validation Errors (400-series)
+    /** A required field is missing. */
     REQUIRED(
         1001,
         "REQUIRED",
@@ -20,6 +31,7 @@ public enum StandardErrorType implements ErrorType {
         ErrorCategory.VALIDATION
     ),
 
+    /** A field has an invalid format. */
     INVALID_FORMAT(
         1002,
         "INVALID_FORMAT", 
@@ -29,6 +41,7 @@ public enum StandardErrorType implements ErrorType {
         ErrorCategory.VALIDATION
     ),
 
+    /** A field exceeds its maximum length. */
     TOO_LONG(
         1003,
         "TOO_LONG",
@@ -38,6 +51,7 @@ public enum StandardErrorType implements ErrorType {
         ErrorCategory.VALIDATION
     ),
 
+    /** A field is shorter than its minimum length. */
     TOO_SHORT(
         1004,
         "TOO_SHORT",
@@ -47,6 +61,7 @@ public enum StandardErrorType implements ErrorType {
         ErrorCategory.VALIDATION
     ),
 
+    /** A value is outside its permitted range. */
     OUT_OF_RANGE(
         1005,
         "OUT_OF_RANGE",
@@ -56,6 +71,7 @@ public enum StandardErrorType implements ErrorType {
         ErrorCategory.VALIDATION
     ),
 
+    /** An email address has an invalid format. */
     INVALID_EMAIL(
         1006,
         "INVALID_EMAIL",
@@ -66,6 +82,7 @@ public enum StandardErrorType implements ErrorType {
     ),
 
     // Resource Errors
+    /** A requested resource was not found. */
     NOT_FOUND(
         2001,
         "NOT_FOUND",
@@ -75,6 +92,7 @@ public enum StandardErrorType implements ErrorType {
         ErrorCategory.RESOURCE
     ),
 
+    /** A resource already exists. */
     ALREADY_EXISTS(
         2002,
         "ALREADY_EXISTS",
@@ -85,6 +103,7 @@ public enum StandardErrorType implements ErrorType {
     ),
 
     // Security Errors
+    /** Authentication is required. */
     UNAUTHORIZED(
         3001,
         "UNAUTHORIZED",
@@ -94,6 +113,7 @@ public enum StandardErrorType implements ErrorType {
         ErrorCategory.SECURITY
     ),
 
+    /** Access is denied. */
     FORBIDDEN(
         3002,
         "FORBIDDEN",
@@ -104,6 +124,7 @@ public enum StandardErrorType implements ErrorType {
     ),
 
     // Rate Limiting
+    /** A rate limit was exceeded. */
     TOO_MANY_REQUESTS(
         4001,
         "TOO_MANY_REQUESTS",
@@ -114,6 +135,7 @@ public enum StandardErrorType implements ErrorType {
     ),
 
     // Server Errors (500-series)
+    /** An internal server error occurred. */
     INTERNAL_ERROR(
         5001,
         "INTERNAL_ERROR",
@@ -123,6 +145,7 @@ public enum StandardErrorType implements ErrorType {
         ErrorCategory.SYSTEM
     ),
 
+    /** A service is temporarily unavailable. */
     SERVICE_UNAVAILABLE(
         5002,
         "SERVICE_UNAVAILABLE",
@@ -132,6 +155,7 @@ public enum StandardErrorType implements ErrorType {
         ErrorCategory.EXTERNAL_SERVICE
     ),
 
+    /** A downstream request timed out. */
     TIMEOUT(
         5003,
         "TIMEOUT",
@@ -142,6 +166,7 @@ public enum StandardErrorType implements ErrorType {
     ),
 
     // Business Logic Errors
+    /** A domain business rule was violated. */
     BUSINESS_RULE_VIOLATION(
         6001,
         "BUSINESS_RULE_VIOLATION",
@@ -151,6 +176,7 @@ public enum StandardErrorType implements ErrorType {
         ErrorCategory.BUSINESS_LOGIC
     ),
 
+    /** An account has insufficient funds. */
     INSUFFICIENT_FUNDS(
         6002,
         "INSUFFICIENT_FUNDS",
@@ -161,6 +187,7 @@ public enum StandardErrorType implements ErrorType {
     ),
 
     // Contract Violations (Programming Errors - typically 500 series)
+    /** A method precondition was violated. */
     PRECONDITION_VIOLATION(
         9001,
         "PRECONDITION_VIOLATION",
@@ -170,6 +197,7 @@ public enum StandardErrorType implements ErrorType {
         ErrorCategory.CONTRACT
     ),
 
+    /** A method postcondition was violated. */
     POSTCONDITION_VIOLATION(
         9002,
         "POSTCONDITION_VIOLATION", 
@@ -179,6 +207,7 @@ public enum StandardErrorType implements ErrorType {
         ErrorCategory.CONTRACT
     ),
 
+    /** An object invariant was violated. */
     INVARIANT_VIOLATION(
         9003,
         "INVARIANT_VIOLATION",
@@ -188,6 +217,7 @@ public enum StandardErrorType implements ErrorType {
         ErrorCategory.CONTRACT
     ),
 
+    /** A null value was supplied where forbidden. */
     NULL_POINTER_VIOLATION(
         9004,
         "NULL_POINTER_VIOLATION",

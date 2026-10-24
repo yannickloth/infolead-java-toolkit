@@ -83,6 +83,9 @@ BusinessRuleError fundsError = BusinessRuleError.insufficientFunds("ACC123", 100
 
 // Age restriction
 BusinessRuleError ageError = BusinessRuleError.ageRestriction(18, 16);
+
+// Currency mismatch (see jtk-currency Money)
+BusinessRuleError currencyError = BusinessRuleError.currencyMismatch("EUR", "USD");
 ```
 
 ### Authorization Errors (HTTP 401/403)
@@ -157,7 +160,121 @@ RuntimeException ex = error.toException();
 // - AuthorizationError → SecurityException
 // - ResourceError → IllegalStateException
 // - InvariantError → IllegalStateException
+
+### Capturing exceptions into results (`fromTry`)
+
+The exception boundary goes both ways: `Either.fromTry`, `Result.fromTry` and
+`liftTry` capture exceptions from throwing code into railway values, mapping
+them to error/anomaly values via a caller-supplied mapper. The computations
+are passed as `CheckedSupplier`, `CheckedFunction` and `CheckedRunnable`
+(`eu.infolead.jtk.fp`), so lambdas and method references that declare checked
+exceptions need no try/catch wrapping:
+
+```java
+// The lambda throws IOException (checked) — no try/catch needed:
+Result<String, String> config = Result.fromTry(
+    ex -> "Cannot read config: " + ex.getMessage(),   // map Exception → error value
+    () -> Files.readString(Path.of("config.properties")));
 ```
+
+**Error vs Exception policy.** These boundaries capture `java.lang.Exception`
+instances — checked exceptions and runtime exceptions alike. `java.lang.Error`
+instances (`OutOfMemoryError`, `StackOverflowError`, `LinkageError`, ...) are
+deliberately **not** captured and keep propagating:
+
+- Errors signal JVM-level failures from which the process cannot reliably
+  continue; converting them to values would let the program resume in an
+  undefined state.
+- The toolkit's `SystemError` anomaly model represents recoverable domain and
+  system failures (with HTTP mappings), not JVM failures.
+- Handle `Error`s only at thread or process boundaries, such as an
+  application-wide exception handler.
+
+```
+
+## Operational Metadata
+
+Errors can be enriched without changing their concrete record type. The
+`with...` methods return a `ContextualSystemError` decorator that carries the
+extra metadata.
+
+### Cause chaining
+
+```java
+SystemError error = PostconditionError.persistenceFailed("Order", 42)
+    .withCause(new IOException("disk full"))
+    .withSuppressedException(new IllegalStateException("retry failed"));
+
+RuntimeException exception = error.toException();
+// exception.getCause()       -> IOException
+// exception.getSuppressed()  -> IllegalStateException
+```
+
+### Retryability
+
+Server errors and HTTP 429 are retryable. Deterministic contract violations and
+critical integrity failures are not, because repeating the request cannot make
+them succeed. Rate limits suggest a one-second delay and service-unavailable
+responses suggest five seconds; a caller can override either value.
+
+```java
+SystemError error = PreconditionError.rateLimitExceeded("100/min")
+    .withRetryAfter(Duration.ofSeconds(30));
+
+error.isRetryable();                 // true
+error.retryAfter();                  // Maybe.of(30s)
+error.retryAfterHeader();            // Maybe.of("30")
+```
+
+### Correlation context
+
+```java
+SystemError error = ResourceError.notFound("User", 7)
+    .withCorrelationId("corr-123")
+    .withTraceId("trace-456")
+    .withRequestId("req-789")
+    .withTenantId("tenant-a");
+```
+
+These identifiers are emitted as RFC 7807 extension members
+(`correlationId`, `traceId`, `requestId`, `tenantId`), alongside
+`retryable` and `retryAfter`.
+
+### Redaction
+
+Wrap secrets in `Sensitive`, or attach a redaction policy:
+
+```java
+ParameterError.invalidFormat("password", Sensitive.of(rawPassword));
+
+Map<String, Object> payload = Map.of("user", "alice", "password", "hunter2");
+SystemError safe = ParameterError.invalidFormat("payload", payload)
+    .withRedaction(RedactionPolicy.standard());
+```
+
+`Sensitive` renders as `[REDACTED]` everywhere: messages, `format()`,
+`toString()` and problem details. `RedactionPolicy.standard()` also masks map
+entries whose key looks like a credential (`password`, `token`,
+`authorization`, ...).
+
+### Localization
+
+Every error type has a stable message key, for example
+`error.validation.parameter.null-parameter`. The resolver picks a language from
+`Accept-Language` and falls back to the declared English title/template when a
+translation is missing.
+
+```java
+ErrorLocalizer localizer =
+    ErrorLocalizer.acceptLanguage(request.getHeader("Accept-Language"));
+ProblemDetail problem = error.toProblemDetail(instance, localizer);
+```
+
+`about:blank` problem titles are resolved to the localized HTTP reason phrase
+through `ProblemDetail.localized(Locale)` and
+`StandardProblemDetail.aboutBlank(status, locale)`. Translations live in
+`jtk-lang/src/main/resources/eu/infolead/jtk/anomaly/messages*.properties` and
+`.../http/http-status*.properties`.
 
 ## Error Classification
 
