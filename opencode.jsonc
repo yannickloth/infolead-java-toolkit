@@ -1,0 +1,16 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  // Enable built-in language servers; jdtls handles *.java (installed via nix).
+  "lsp": true,
+  // Keep the filesystem watcher quiet for Maven build output and direnv state.
+  "watcher": {
+    "ignore": ["**/target/**", ".direnv/**"]
+  },
+  // Guardrails: this repo often carries uncommitted parallel agent work.
+  "permissions": [
+    { "action": "shell", "resource": "git push*", "effect": "ask" },
+    { "action": "shell", "resource": "git reset --hard*", "effect": "ask" },
+    { "action": "shell", "resource": "git clean*", "effect": "ask" },
+    { "action": "shell", "resource": "git checkout -- *", "effect": "ask" },
+  ],
+}
