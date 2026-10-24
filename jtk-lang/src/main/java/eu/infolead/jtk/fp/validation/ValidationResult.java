@@ -16,6 +16,7 @@ import eu.infolead.jtk.anomaly.http.ProblemDetail;
 import eu.infolead.jtk.anomaly.http.StandardProblemDetail;
 import eu.infolead.jtk.fp.either.Either;
 import eu.infolead.jtk.fp.either.Maybe;
+import eu.infolead.jtk.fp.either.Result;
 import eu.infolead.jtk.fp.either.Validation;
 import eu.infolead.jtk.http.HttpStatusCode;
 import eu.infolead.jtk.logic.Bool;
@@ -90,6 +91,7 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
     /**
      * Converts a simple Validation to a ValidationResult.
      *
+     * @param <E>         the invalid value type
      * @param <T>         the type of the valid value
      * @param validation  the validation to convert
      * @param errorMapper function to convert the error to ValidationError
@@ -197,6 +199,27 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
      * @return Validation with first error or valid value
      */
     Validation<ValidationError, T> toValidation();
+
+    /**
+     * Converts to a railway {@link Result}.
+     *
+     * <p>A {@link Result} carries a single failure, so only the first error is
+     * kept. Use {@link #getErrors()} or {@link #toValidation()} when every
+     * accumulated error must be inspected.</p>
+     *
+     * <pre>{@code
+     * Result<ValidationError, User> result = validationResult.toResult();
+     * User user = result.fold(error -> report(error), value -> value);
+     * }</pre>
+     *
+     * @return a successful result with the valid value, or a failure with the
+     *         first validation error
+     */
+    default Result<ValidationError, T> toResult() {
+        return isSuccess().toBoolean()
+                ? Result.success(getValue().orNull())
+                : Result.failure(getErrors().get(0));
+    }
 
     /**
      * Converts validation errors to a ProblemDetail for HTTP API responses.
@@ -309,6 +332,12 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
      * @param <T>   the value type
      */
     record Success<T>(T value) implements ValidationResult<T> {
+        /**
+         * Compact constructor rejecting a null valid value.
+         *
+         * @param value the validated value; must not be {@code null}
+         * @throws NullPointerException if {@code value} is {@code null}
+         */
         public Success {
             Objects.requireNonNull(value, "value cannot be null");
         }
@@ -380,6 +409,13 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
      * @param <T>    the value type that would have been valid
      */
     record Failure<T>(List<ValidationError> errors) implements ValidationResult<T> {
+        /**
+         * Compact constructor enforcing a non-empty, immutable error list.
+         *
+         * @param errors the accumulated errors; must not be null or empty
+         * @throws IllegalArgumentException if {@code errors} is empty
+         * @throws NullPointerException     if {@code errors} is {@code null}
+         */
         public Failure {
             Objects.requireNonNull(errors, "errors cannot be null");
             if (errors.isEmpty()) {

@@ -2,10 +2,15 @@ package eu.infolead.jtk.fp.either;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import eu.infolead.jtk.fp.validation.ValidationError;
+import eu.infolead.jtk.fp.validation.ValidationResult;
 import eu.infolead.jtk.logic.Bool;
 
 /**
@@ -65,6 +70,175 @@ public sealed interface Validation<I, V> extends Either<I, V> permits Validation
         return fold(
                 invalid -> eu.infolead.jtk.fp.validation.ValidationResult.failure(errorMapper.apply(invalid)),
                 eu.infolead.jtk.fp.validation.ValidationResult::success);
+    }
+
+    /**
+     * Applies this validation and another one applicatively, combining their
+     * values and accumulating every invalid value instead of short-circuiting.
+     *
+     * <p>Both validations are always evaluated. The result holds the combined
+     * value when both are valid, or the list of all invalid values.</p>
+     *
+     * <pre>{@code
+     * Validation<List<String>, String> city =
+     *         Validation.valid("Ghent")
+     *                 .zip(Validation.<String, Integer>invalid("no postal code"),
+     *                         (name, code) -> name + " " + code);
+     * city.isInvalid(); // true
+     * city.fold(errors -> errors, value -> List.of()); // ["no postal code"]
+     * }</pre>
+     *
+     * @param <U>      the other value type
+     * @param <R>      the combined value type
+     * @param other    the other validation
+     * @param combiner function combining both values
+     * @return a validation holding the combined value or all invalid values
+     */
+    default <U, R> Validation<List<I>, R> zip(final Validation<I, U> other,
+            final BiFunction<? super V, ? super U, ? extends R> combiner) {
+        Objects.requireNonNull(other, "other");
+        Objects.requireNonNull(combiner, "combiner");
+        return fold(
+                leftError -> other.fold(
+                        rightError -> Validation.<List<I>, R>invalid(List.of(leftError, rightError)),
+                        rightValue -> Validation.<List<I>, R>invalid(List.of(leftError))),
+                leftValue -> other.fold(
+                        rightError -> Validation.<List<I>, R>invalid(List.of(rightError)),
+                        rightValue -> Validation.<List<I>, R>valid(combiner.apply(leftValue, rightValue))));
+    }
+
+    /**
+     * Applies this validation and another one applicatively, accumulating all
+     * invalid values.
+     *
+     * <p>This is an alias for {@link #zip(Validation, BiFunction)}.</p>
+     *
+     * @param <U>      the other value type
+     * @param <R>      the combined value type
+     * @param other    the other validation
+     * @param combiner function combining both values
+     * @return a validation holding the combined value or all invalid values
+     */
+    default <U, R> Validation<List<I>, R> combine(final Validation<I, U> other,
+            final BiFunction<? super V, ? super U, ? extends R> combiner) {
+        return zip(other, combiner);
+    }
+
+    /**
+     * Applies this validation and another one, keeping this value when both are
+     * valid and accumulating every invalid value otherwise.
+     *
+     * <p>Use this for validation-only chains where the other validation guards
+     * an additional condition and its value is not needed.</p>
+     *
+     * <pre>{@code
+     * Validation<List<String>, String> checked =
+     *         Validation.valid("user").and(Validation.<String, Integer>invalid("age"));
+     * checked.fold(errors -> errors, value -> List.of()); // ["age"]
+     * }</pre>
+     *
+     * @param <U>   the other value type
+     * @param other the other validation
+     * @return a validation holding this value or all invalid values
+     */
+    default <U> Validation<List<I>, V> and(final Validation<I, U> other) {
+        Objects.requireNonNull(other, "other");
+        return fold(
+                leftError -> other.fold(
+                        rightError -> Validation.<List<I>, V>invalid(List.of(leftError, rightError)),
+                        rightValue -> Validation.<List<I>, V>invalid(List.of(leftError))),
+                leftValue -> other.fold(
+                        rightError -> Validation.<List<I>, V>invalid(List.of(rightError)),
+                        rightValue -> Validation.<List<I>, V>valid(leftValue)));
+    }
+
+    /**
+     * Applies two {@link ValidationError}-based validations and accumulates both
+     * errors into a {@link ValidationResult}.
+     *
+     * <p>This is the applicative entry point for the validation API: unlike
+     * {@link Either#flatMap}, which stops at the first error, both validations
+     * are evaluated and every error is reported.</p>
+     *
+     * <pre>{@code
+     * ValidationResult<Registration> result = Validation.zip(
+     *         Validation.required("email", email),
+     *         Validation.lengthBetween("name", name, 2, 50),
+     *         Registration::new);
+     * if (result.isFailure()) {
+     *     List<ValidationError> all = result.getErrors();
+     * }
+     * }</pre>
+     *
+     * @param <A>      the left value type
+     * @param <B>      the right value type
+     * @param <R>      the combined value type
+     * @param left     the first validation
+     * @param right    the second validation
+     * @param combiner function combining both values
+     * @return a successful result with the combined value, or a failure holding
+     *         every error
+     */
+    static <A, B, R> ValidationResult<R> zip(final Validation<ValidationError, A> left,
+            final Validation<ValidationError, B> right,
+            final BiFunction<? super A, ? super B, ? extends R> combiner) {
+        Objects.requireNonNull(left, "left");
+        Objects.requireNonNull(right, "right");
+        Objects.requireNonNull(combiner, "combiner");
+        final List<ValidationError> errors = new ArrayList<>(2);
+        final Maybe<A> leftValue = left.fold(
+                error -> {
+                    errors.add(error);
+                    return Maybe.<A>none();
+                },
+                Maybe::of);
+        final Maybe<B> rightValue = right.fold(
+                error -> {
+                    errors.add(error);
+                    return Maybe.<B>none();
+                },
+                Maybe::of);
+        if (!errors.isEmpty()) {
+            return ValidationResult.failure(errors);
+        }
+        return ValidationResult.success(combiner.apply(leftValue.orNull(), rightValue.orNull()));
+    }
+
+    /**
+     * Applies two {@link ValidationError}-based validations and accumulates both
+     * errors into a {@link ValidationResult}.
+     *
+     * <p>This is an alias for {@link #zip(Validation, Validation, BiFunction)}.</p>
+     *
+     * @param <A>      the left value type
+     * @param <B>      the right value type
+     * @param <R>      the combined value type
+     * @param left     the first validation
+     * @param right    the second validation
+     * @param combiner function combining both values
+     * @return a successful result with the combined value, or a failure holding
+     *         every error
+     */
+    static <A, B, R> ValidationResult<R> combine(final Validation<ValidationError, A> left,
+            final Validation<ValidationError, B> right,
+            final BiFunction<? super A, ? super B, ? extends R> combiner) {
+        return zip(left, right, combiner);
+    }
+
+    /**
+     * Applies two {@link ValidationError}-based validations, keeping the left
+     * value when both are valid and accumulating every error otherwise.
+     *
+     * @param <A>   the left value type
+     * @param <B>   the right value type
+     * @param left  the first validation
+     * @param right the second validation
+     * @return a successful result with the left value, or a failure holding
+     *         every error
+     */
+    static <A, B> ValidationResult<A> and(final Validation<ValidationError, A> left,
+            final Validation<ValidationError, B> right) {
+        return zip(left, right, (leftValue, rightValue) -> leftValue);
     }
 
     /**
