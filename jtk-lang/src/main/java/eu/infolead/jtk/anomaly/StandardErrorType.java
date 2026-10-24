@@ -16,7 +16,6 @@ public enum StandardErrorType implements ErrorType {
         "REQUIRED",
         "Required field is missing or null",
             HttpStatus.BAD_REQUEST.code(),
-        "https://tools.ietf.org/html/rfc7231#section-6.5.1",
         "Bad Request - Required Field Missing",
         ErrorCategory.VALIDATION
     ),
@@ -26,7 +25,6 @@ public enum StandardErrorType implements ErrorType {
         "INVALID_FORMAT", 
         "Field has invalid format",
             HttpStatus.BAD_REQUEST.code(),
-        "https://tools.ietf.org/html/rfc7231#section-6.5.1",
         "Bad Request - Invalid Format",
         ErrorCategory.VALIDATION
     ),
@@ -35,8 +33,7 @@ public enum StandardErrorType implements ErrorType {
         1003,
         "TOO_LONG",
         "Field exceeds maximum length of %d characters",
-            HttpStatus.BAD_REQUEST.code(),
-        "https://tools.ietf.org/html/rfc7231#section-6.5.1", 
+            HttpStatus.BAD_REQUEST.code(), 
         "Bad Request - Value Too Long",
         ErrorCategory.VALIDATION
     ),
@@ -46,7 +43,6 @@ public enum StandardErrorType implements ErrorType {
         "TOO_SHORT",
         "Field is shorter than minimum length of %d characters",
             HttpStatus.BAD_REQUEST.code(),
-        "https://tools.ietf.org/html/rfc7231#section-6.5.1",
         "Bad Request - Value Too Short", 
         ErrorCategory.VALIDATION
     ),
@@ -56,7 +52,6 @@ public enum StandardErrorType implements ErrorType {
         "OUT_OF_RANGE",
         "Value must be between %s and %s",
             HttpStatus.BAD_REQUEST.code(),
-        "https://tools.ietf.org/html/rfc7231#section-6.5.1",
         "Bad Request - Value Out Of Range",
         ErrorCategory.VALIDATION
     ),
@@ -66,7 +61,6 @@ public enum StandardErrorType implements ErrorType {
         "INVALID_EMAIL",
         "Invalid email address format",
             HttpStatus.BAD_REQUEST.code(),
-        "https://tools.ietf.org/html/rfc7231#section-6.5.1",
         "Bad Request - Invalid Email",
         ErrorCategory.VALIDATION
     ),
@@ -77,7 +71,6 @@ public enum StandardErrorType implements ErrorType {
         "NOT_FOUND",
         "Requested resource was not found",
             HttpStatus.NOT_FOUND.code(),
-        "https://tools.ietf.org/html/rfc7231#section-6.5.4",
         "Not Found",
         ErrorCategory.RESOURCE
     ),
@@ -87,7 +80,6 @@ public enum StandardErrorType implements ErrorType {
         "ALREADY_EXISTS",
         "Resource already exists",
             HttpStatus.CONFLICT.code(),
-        "https://tools.ietf.org/html/rfc7231#section-6.5.8",
         "Conflict - Resource Already Exists",
         ErrorCategory.BUSINESS_LOGIC
     ),
@@ -98,7 +90,6 @@ public enum StandardErrorType implements ErrorType {
         "UNAUTHORIZED",
         "Authentication required",
             HttpStatus.UNAUTHORIZED.code(),
-        "https://tools.ietf.org/html/rfc7235#section-3.1",
         "Unauthorized",
         ErrorCategory.SECURITY
     ),
@@ -108,7 +99,6 @@ public enum StandardErrorType implements ErrorType {
         "FORBIDDEN",
         "Access denied",
         403,
-        "https://tools.ietf.org/html/rfc7231#section-6.5.3",
         "Forbidden",
         ErrorCategory.SECURITY
     ),
@@ -119,7 +109,6 @@ public enum StandardErrorType implements ErrorType {
         "TOO_MANY_REQUESTS",
         "Rate limit exceeded",
             HttpStatus.TOO_MANY_REQUESTS.code(),
-        "https://tools.ietf.org/html/rfc6585#section-4",
         "Too Many Requests",
         ErrorCategory.RATE_LIMIT
     ),
@@ -130,7 +119,6 @@ public enum StandardErrorType implements ErrorType {
         "INTERNAL_ERROR",
         "An internal server error occurred",
             HttpStatus.INTERNAL_SERVER_ERROR.code(),
-        "https://tools.ietf.org/html/rfc7231#section-6.6.1",
         "Internal Server Error",
         ErrorCategory.SYSTEM
     ),
@@ -140,7 +128,6 @@ public enum StandardErrorType implements ErrorType {
         "SERVICE_UNAVAILABLE",
         "Service is temporarily unavailable",
             HttpStatus.SERVICE_UNAVAILABLE.code(),
-        "https://tools.ietf.org/html/rfc7231#section-6.6.4",
         "Service Unavailable",
         ErrorCategory.EXTERNAL_SERVICE
     ),
@@ -150,7 +137,6 @@ public enum StandardErrorType implements ErrorType {
         "TIMEOUT",
         "Request timed out",
             HttpStatus.GATEWAY_TIMEOUT.code(),
-        "https://tools.ietf.org/html/rfc7231#section-6.6.5",
         "Gateway Timeout",
         ErrorCategory.EXTERNAL_SERVICE
     ),
@@ -160,9 +146,8 @@ public enum StandardErrorType implements ErrorType {
         6001,
         "BUSINESS_RULE_VIOLATION",
         "Business rule violation: %s",
-            HttpStatus.UNPROCESSABLE_CONTENT.code(),
-        "https://tools.ietf.org/html/rfc4918#section-11.2", 
-        "Unprocessable Entity - Business Rule Violation",
+            HttpStatus.UNPROCESSABLE_CONTENT.code(), 
+        "Unprocessable Content - Business Rule Violation",
         ErrorCategory.BUSINESS_LOGIC
     ),
 
@@ -171,8 +156,7 @@ public enum StandardErrorType implements ErrorType {
         "INSUFFICIENT_FUNDS",
         "Insufficient funds for this operation",
             HttpStatus.UNPROCESSABLE_CONTENT.code(),
-        "https://tools.ietf.org/html/rfc4918#section-11.2",
-        "Unprocessable Entity - Insufficient Funds",
+        "Unprocessable Content - Insufficient Funds",
         ErrorCategory.BUSINESS_LOGIC
     ),
 
@@ -182,7 +166,6 @@ public enum StandardErrorType implements ErrorType {
         "PRECONDITION_VIOLATION",
         "Method precondition violated: %s",
             HttpStatus.INTERNAL_SERVER_ERROR.code(),
-        "https://tools.ietf.org/html/rfc7231#section-6.6.1",
         "Internal Server Error - Precondition Violation",
         ErrorCategory.CONTRACT
     ),
@@ -192,7 +175,6 @@ public enum StandardErrorType implements ErrorType {
         "POSTCONDITION_VIOLATION", 
         "Method postcondition violated: %s",
             HttpStatus.INTERNAL_SERVER_ERROR.code(),
-        "https://tools.ietf.org/html/rfc7231#section-6.6.1",
         "Internal Server Error - Postcondition Violation",
         ErrorCategory.CONTRACT
     ),
@@ -202,7 +184,6 @@ public enum StandardErrorType implements ErrorType {
         "INVARIANT_VIOLATION",
         "Object invariant violated: %s",
             HttpStatus.INTERNAL_SERVER_ERROR.code(),
-        "https://tools.ietf.org/html/rfc7231#section-6.6.1",
         "Internal Server Error - Invariant Violation",
         ErrorCategory.CONTRACT
     ),
@@ -211,8 +192,7 @@ public enum StandardErrorType implements ErrorType {
         9004,
         "NULL_POINTER_VIOLATION",
         "Null value not allowed: %s",
-            HttpStatus.INTERNAL_SERVER_ERROR.code(),
-        "https://tools.ietf.org/html/rfc7231#section-6.6.1", 
+            HttpStatus.INTERNAL_SERVER_ERROR.code(), 
         "Internal Server Error - Null Pointer Violation",
         ErrorCategory.CONTRACT
     );
@@ -226,12 +206,12 @@ public enum StandardErrorType implements ErrorType {
     private final ErrorCategory category;
 
     StandardErrorType(int typeNumber, String code, String messageTemplate, int httpStatus, 
-                     String problemType, String problemTitle, ErrorCategory category) {
+                     String problemTitle, ErrorCategory category) {
         this.typeNumber = typeNumber;
         this.code = code;
         this.messageTemplate = messageTemplate;
         this.httpStatus = httpStatus;
-        this.problemType = URI.create(problemType);
+        this.problemType = ErrorType.problemType(category, "standard", code);
         this.problemTitle = problemTitle;
         this.category = category;
     }
@@ -274,10 +254,12 @@ public enum StandardErrorType implements ErrorType {
     @Override
     public ErrorSeverity getSeverity() {
         return switch (this) {
-            case PRECONDITION_VIOLATION, POSTCONDITION_VIOLATION, 
+            case PRECONDITION_VIOLATION, POSTCONDITION_VIOLATION,
                  INVARIANT_VIOLATION, NULL_POINTER_VIOLATION -> ErrorSeverity.CRITICAL;
             case INTERNAL_ERROR, SERVICE_UNAVAILABLE, TIMEOUT -> ErrorSeverity.ERROR;
-            default -> ErrorSeverity.WARNING;
+            case REQUIRED, INVALID_FORMAT, TOO_LONG, TOO_SHORT,
+                 OUT_OF_RANGE, INVALID_EMAIL, NOT_FOUND, ALREADY_EXISTS, UNAUTHORIZED, FORBIDDEN,
+                 TOO_MANY_REQUESTS, BUSINESS_RULE_VIOLATION, INSUFFICIENT_FUNDS -> ErrorSeverity.WARNING;
         };
     }
 }

@@ -4,13 +4,8 @@ import eu.infolead.jtk.logic.Bool;
 
 sealed abstract class AbstractEither<L, R, X> extends ValueContainer<X> implements Either<L, R>
         permits AbstractLeft, AbstractRight {
-    /**
-     * The non-serializable super class of a "Serializable" class (e.g. {@link Some}
-     * and {@link None}) should have a no-argument constructor
-     * <p>
-     * Cf. <a target="_blank" href=
-     * "https://rules.sonarsource.com/java/RSPEC-2055">https://rules.sonarsource.com/java/RSPEC-2055</a>
-     */
+    private static final long serialVersionUID = 1L;
+
     AbstractEither() {
         super();
     }

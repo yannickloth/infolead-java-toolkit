@@ -53,8 +53,8 @@
  * public Either<String, String> validateEmail(String email) {
  *     return Either.fromBoolean(
  *         email.contains("@"),
- *         () -> email,
- *         () -> "Invalid email format"
+ *         () -> "Invalid email format",   // Error track (first parameter)
+ *         () -> email                     // Success track (second parameter)
  *     );
  * }
  * 
@@ -67,8 +67,8 @@
  * 
  * // Chain them together - train goes through multiple stations
  * Either<String, User> userResult = parseUserSafely(input)
- *     .flatMap(this::validateEmail)    // Station 1: Email validation
- *     .flatMap(this::createUser);      // Station 2: User creation
+ *     .flatMap(user -> validateEmail(user.getEmail()))  // Station 1: Email validation
+ *     .flatMap(this::createUser);                        // Station 2: User creation
  * 
  * // If any station fails, the train derails to error track
  * }</pre>
@@ -268,22 +268,20 @@
  *         );
  *     }
  *     
+ *     // Welcome email is best-effort: keep the created user if it fails.
+ *     private Either<String, User> sendWelcomeEmailBestEffort(User user) {
+ *         return sendWelcomeEmail(user)
+ *             .recover(error -> Either.right(user));
+ *     }
+ *     
  *     // Complete railway journey
  *     public Either<String, User> registerUser(String input) {
  *         return loadRegistrationData(input)                    // Station 1: Load cargo
  *             .flatMap(this::validateEmail)                     // Station 2: Email check
- *             .flatMap(this::validateAge)                       // Station 3: Age check  
+ *             .flatMap(this::validateAge)                       // Station 3: Age check
  *             .flatMap(this::checkEmailNotTaken)                // Station 4: Uniqueness check
  *             .flatMap(this::createUser)                        // Station 5: Creation
- *             .flatMap(this::sendWelcomeEmail)                  // Station 6: Welcome
- *             .recover(error -> {                               // Emergency recovery
- *                 if (error.contains("email failed")) {
- *                     // User was created but email failed - that's OK
- *                     return Either.right(userRepository.findByEmail(
- *                         extractEmailFromError(error)));
- *                 }
- *                 return Either.left(error);  // Can't recover
- *             });
+ *             .flatMap(this::sendWelcomeEmailBestEffort);       // Station 6: Welcome
  *     }
  *     
  *     // Railway terminal - extract final HTTP response
@@ -305,13 +303,13 @@
  * 
  * <pre>{@code
  * // Collect all validation errors
- * ValidationResult<User> userValidation = Validator.ObjectValidator.forObject(new User())
- *     .validate(User::getEmail, emailValidator)     // Validate email
- *     .validate(User::getName, nameValidator)       // Validate name  
- *     .validate(User::getAge, ageValidator)         // Validate age
+ * ValidationResult<User> userValidation = Validator.object(new User())
+ *     .validateAndAccumulate(User::getEmail, emailValidator)  // Validate email
+ *     .validateAndAccumulate(User::getName, nameValidator)    // Validate name
+ *     .validateAndAccumulate(User::getAge, ageValidator)      // Validate age
  *     .result();
  * 
- * if (userValidation.isFailure()) {
+ * if (userValidation.isFailure().toBoolean()) {
  *     List<ValidationError> allErrors = userValidation.getErrors();
  *     // Show all errors to user at once
  * }

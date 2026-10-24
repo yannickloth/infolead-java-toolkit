@@ -131,7 +131,7 @@ System.out.println("Detail: " + problem.getProblemDetail());
 
 // JSON output (when serialized):
 {
-  "type": "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+  "type": "https://errors.infolead.eu/problems/validation/parameter/null-parameter",
   "title": "Bad Request - Null Parameter", 
   "status": 400,
   "detail": "userId: Parameter cannot be null"

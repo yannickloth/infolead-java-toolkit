@@ -58,10 +58,10 @@
  * 
  * <h3>Fluent Validator API</h3>
  * <pre>{@code
- * ValidationResult<User> result = Validator.ObjectValidator.forObject(new User())
- *     .validate(User::getEmail, Validator.field("email").required())
- *     .validate(User::getName, Validator.field("name").lengthBetween(2, 50))
- *     .validate(User::getAge, Validator.field("age").rangeBetween(0, 120))
+ * ValidationResult<User> result = Validator.object(new User())
+ *     .validate(User::getEmail, email -> Validator.field("email").required(email))
+ *     .validate(User::getName, name -> Validator.field("name").lengthBetween(name, 2, 50))
+ *     .validate(User::getAge, age -> Validator.field("age").rangeBetween(age, 0, 120))
  *     .result();
  * }</pre>
  * 
@@ -70,7 +70,7 @@
  * ValidationError error = ValidationError.required("field")
  *     .withErrorId("REQ-USER-FIELD-001");
  * 
- * String errorId = error.getErrorId().orElse("No ID");
+ * String errorId = error.getErrorId().fold(() -> "No ID", id -> id);
  * String formatted = error.format(); // [REQUIRED|REQ-USER-FIELD-001] field: ...
  * }</pre>
  * 

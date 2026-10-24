@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<ISO_4217 Pblshd="2023-01-01">
+<!--
+  ISO 4217 list-one.xml, published by SIX on 2026-09-17.
+  Source: https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-one.xml
+  Retrieved: 2026-10-23.
+  Refresh: replace this file with the upstream list-one.xml, then remove trailing
+  whitespace and update CurrencyRepositoryTest.publishedOn().
+-->
+<ISO_4217 Pblshd="2026-09-17">
 	<CcyTbl>
 		<CcyNtry>
 			<CtryNm>AFGHANISTAN</CtryNm>
@@ -66,6 +73,13 @@
 			<CcyNm>East Caribbean Dollar</CcyNm>
 			<Ccy>XCD</Ccy>
 			<CcyNbr>951</CcyNbr>
+			<CcyMnrUnts>2</CcyMnrUnts>
+		</CcyNtry>
+		<CcyNtry>
+			<CtryNm>ARAB MONETARY FUND</CtryNm>
+			<CcyNm IsFund="true">Arab Accounting Dinar</CcyNm>
+			<Ccy>XAD</Ccy>
+			<CcyNbr>396</CcyNbr>
 			<CcyMnrUnts>2</CcyMnrUnts>
 		</CcyNtry>
 		<CcyNtry>
@@ -252,9 +266,9 @@
 		</CcyNtry>
 		<CcyNtry>
 			<CtryNm>BULGARIA</CtryNm>
-			<CcyNm>Bulgarian Lev</CcyNm>
-			<Ccy>BGN</Ccy>
-			<CcyNbr>975</CcyNbr>
+			<CcyNm>Euro</CcyNm>
+			<Ccy>EUR</Ccy>
+			<CcyNbr>978</CcyNbr>
 			<CcyMnrUnts>2</CcyMnrUnts>
 		</CcyNtry>
 		<CcyNtry>
@@ -371,7 +385,7 @@
 		</CcyNtry>
 		<CcyNtry>
 			<CtryNm>COMOROS (THE)</CtryNm>
-			<CcyNm>Comorian Franc </CcyNm>
+			<CcyNm>Comorian Franc</CcyNm>
 			<Ccy>KMF</Ccy>
 			<CcyNbr>174</CcyNbr>
 			<CcyMnrUnts>0</CcyMnrUnts>
@@ -426,16 +440,9 @@
 			<CcyMnrUnts>2</CcyMnrUnts>
 		</CcyNtry>
 		<CcyNtry>
-			<CtryNm>CUBA</CtryNm>
-			<CcyNm>Peso Convertible</CcyNm>
-			<Ccy>CUC</Ccy>
-			<CcyNbr>931</CcyNbr>
-			<CcyMnrUnts>2</CcyMnrUnts>
-		</CcyNtry>
-		<CcyNtry>
 			<CtryNm>CURAÇAO</CtryNm>
-			<CcyNm>Netherlands Antillean Guilder</CcyNm>
-			<Ccy>ANG</Ccy>
+			<CcyNm>Caribbean Guilder</CcyNm>
+			<Ccy>XCG</Ccy>
 			<CcyNbr>532</CcyNbr>
 			<CcyMnrUnts>2</CcyMnrUnts>
 		</CcyNtry>
@@ -790,7 +797,7 @@
 			<CcyMnrUnts>2</CcyMnrUnts>
 		</CcyNtry>
 		<CcyNtry>
-			<CtryNm>INTERNATIONAL MONETARY FUND (IMF) </CtryNm>
+			<CtryNm>INTERNATIONAL MONETARY FUND (IMF)</CtryNm>
 			<CcyNm>SDR (Special Drawing Right)</CcyNm>
 			<Ccy>XDR</Ccy>
 			<CcyNbr>960</CcyNbr>
@@ -1489,13 +1496,6 @@
 		<CcyNtry>
 			<CtryNm>SIERRA LEONE</CtryNm>
 			<CcyNm>Leone</CcyNm>
-			<Ccy>SLL</Ccy>
-			<CcyNbr>694</CcyNbr>
-			<CcyMnrUnts>2</CcyMnrUnts>
-		</CcyNtry>
-		<CcyNtry>
-			<CtryNm>SIERRA LEONE</CtryNm>
-			<CcyNm>Leone</CcyNm>
 			<Ccy>SLE</Ccy>
 			<CcyNbr>925</CcyNbr>
 			<CcyMnrUnts>2</CcyMnrUnts>
@@ -1509,8 +1509,8 @@
 		</CcyNtry>
 		<CcyNtry>
 			<CtryNm>SINT MAARTEN (DUTCH PART)</CtryNm>
-			<CcyNm>Netherlands Antillean Guilder</CcyNm>
-			<Ccy>ANG</Ccy>
+			<CcyNm>Caribbean Guilder</CcyNm>
+			<Ccy>XCG</Ccy>
 			<CcyNbr>532</CcyNbr>
 			<CcyMnrUnts>2</CcyMnrUnts>
 		</CcyNtry>
@@ -1800,7 +1800,7 @@
 		</CcyNtry>
 		<CcyNtry>
 			<CtryNm>URUGUAY</CtryNm>
-			<CcyNm>Unidad Previsional</CcyNm>
+			<CcyNm IsFund="true">Unidad Previsional</CcyNm>
 			<Ccy>UYW</Ccy>
 			<CcyNbr>927</CcyNbr>
 			<CcyMnrUnts>4</CcyMnrUnts>
@@ -1884,9 +1884,9 @@
 		</CcyNtry>
 		<CcyNtry>
 			<CtryNm>ZIMBABWE</CtryNm>
-			<CcyNm>Zimbabwe Dollar</CcyNm>
-			<Ccy>ZWL</Ccy>
-			<CcyNbr>932</CcyNbr>
+			<CcyNm>Zimbabwe Gold</CcyNm>
+			<Ccy>ZWG</Ccy>
+			<CcyNbr>924</CcyNbr>
 			<CcyMnrUnts>2</CcyMnrUnts>
 		</CcyNtry>
 		<CcyNtry>

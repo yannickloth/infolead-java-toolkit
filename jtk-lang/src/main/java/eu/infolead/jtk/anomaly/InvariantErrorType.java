@@ -8,13 +8,13 @@ public enum InvariantErrorType implements ErrorType {
 
     OBJECT_CONSISTENCY(
         7001, "OBJECT_CONSISTENCY", "Object consistency violated: %s",
-            HttpStatus.INTERNAL_SERVER_ERROR.code(), "https://tools.ietf.org/html/rfc7231#section-6.6.1", "Internal Server Error - Object Consistency Violated",
+            HttpStatus.INTERNAL_SERVER_ERROR.code(), "Internal Server Error - Object Consistency Violated",
         ErrorCategory.CONTRACT
     ),
 
     DATA_CORRUPTION(
         7002, "DATA_CORRUPTION", "Data corruption detected: %s",
-            HttpStatus.INTERNAL_SERVER_ERROR.code(), "https://tools.ietf.org/html/rfc7231#section-6.6.1", "Internal Server Error - Data Corruption",
+            HttpStatus.INTERNAL_SERVER_ERROR.code(), "Internal Server Error - Data Corruption",
         ErrorCategory.SYSTEM
     );
 
@@ -27,12 +27,12 @@ public enum InvariantErrorType implements ErrorType {
     private final ErrorCategory category;
 
     InvariantErrorType(int typeNumber, String code, String messageTemplate, int httpStatus,
-                      String problemType, String problemTitle, ErrorCategory category) {
+                      String problemTitle, ErrorCategory category) {
         this.typeNumber = typeNumber;
         this.code = code;
         this.messageTemplate = messageTemplate;
         this.httpStatus = httpStatus;
-        this.problemType = URI.create(problemType);
+        this.problemType = ErrorType.problemType(category, "invariant", code);
         this.problemTitle = problemTitle;
         this.category = category;
     }
@@ -47,6 +47,8 @@ public enum InvariantErrorType implements ErrorType {
 
     @Override
     public ErrorSeverity getSeverity() {
-        return ErrorSeverity.CRITICAL; // Invariant violations are always critical
+        return switch (this) {
+            case DATA_CORRUPTION, OBJECT_CONSISTENCY -> ErrorSeverity.CRITICAL;
+        };
     }
 }

@@ -15,9 +15,8 @@ public enum PostconditionErrorType implements ErrorType {
         "EXPECTED_STATE_NOT_REACHED",
         "Expected state '%s' was not reached",
             HttpStatus.INTERNAL_SERVER_ERROR.code(),  // Internal Server Error
-        "https://tools.ietf.org/html/rfc7231#section-6.6.1",
         "Internal Server Error - Expected State Not Reached",
-        ErrorCategory.SYSTEM
+        ErrorCategory.CONTRACT
     ),
 
     INVARIANT_VIOLATED(
@@ -25,7 +24,6 @@ public enum PostconditionErrorType implements ErrorType {
         "INVARIANT_VIOLATED",
         "System invariant violated: %s",
             HttpStatus.INTERNAL_SERVER_ERROR.code(),  // Internal Server Error
-        "https://tools.ietf.org/html/rfc7231#section-6.6.1",
         "Internal Server Error - Invariant Violation",
         ErrorCategory.CONTRACT
     ),
@@ -35,7 +33,6 @@ public enum PostconditionErrorType implements ErrorType {
         "SIDE_EFFECT_FAILED",
         "Required side effect failed: %s",
             HttpStatus.INTERNAL_SERVER_ERROR.code(),  // Internal Server Error
-        "https://tools.ietf.org/html/rfc7231#section-6.6.1",
         "Internal Server Error - Side Effect Failed",
         ErrorCategory.SYSTEM
     ),
@@ -45,7 +42,6 @@ public enum PostconditionErrorType implements ErrorType {
         "PERSISTENCE_FAILED",
         "Failed to persist %s with ID %s",
             HttpStatus.INTERNAL_SERVER_ERROR.code(),  // Internal Server Error
-        "https://tools.ietf.org/html/rfc7231#section-6.6.1",
         "Internal Server Error - Persistence Failed",
         ErrorCategory.SYSTEM
     ),
@@ -55,7 +51,6 @@ public enum PostconditionErrorType implements ErrorType {
         "NOTIFICATION_FAILED",
         "Failed to send %s notification to %s",
             HttpStatus.INTERNAL_SERVER_ERROR.code(),  // Internal Server Error
-        "https://tools.ietf.org/html/rfc7231#section-6.6.1",
         "Internal Server Error - Notification Failed",
         ErrorCategory.EXTERNAL_SERVICE
     ),
@@ -65,9 +60,8 @@ public enum PostconditionErrorType implements ErrorType {
         "CONSISTENCY_VIOLATED",
         "Data consistency rule violated: %s",
             HttpStatus.INTERNAL_SERVER_ERROR.code(),  // Internal Server Error
-        "https://tools.ietf.org/html/rfc7231#section-6.6.1",
         "Internal Server Error - Data Consistency Violated",
-        ErrorCategory.SYSTEM
+        ErrorCategory.CONTRACT
     ),
 
     INTEGRATION_FAILED(
@@ -75,7 +69,6 @@ public enum PostconditionErrorType implements ErrorType {
         "INTEGRATION_FAILED",
         "Integration with %s failed for operation %s",
             HttpStatus.BAD_GATEWAY.code(),  // Bad Gateway
-        "https://tools.ietf.org/html/rfc7231#section-6.6.3",
         "Bad Gateway - External Integration Failed",
         ErrorCategory.EXTERNAL_SERVICE
     ),
@@ -85,7 +78,6 @@ public enum PostconditionErrorType implements ErrorType {
         "TRANSACTION_ROLLBACK",
         "Transaction was rolled back: %s",
             HttpStatus.INTERNAL_SERVER_ERROR.code(),  // Internal Server Error
-        "https://tools.ietf.org/html/rfc7231#section-6.6.1",
         "Internal Server Error - Transaction Rollback",
         ErrorCategory.SYSTEM
     ),
@@ -95,7 +87,6 @@ public enum PostconditionErrorType implements ErrorType {
         "ASYNC_OPERATION_FAILED",
         "Asynchronous operation failed: %s",
             HttpStatus.INTERNAL_SERVER_ERROR.code(),  // Internal Server Error
-        "https://tools.ietf.org/html/rfc7231#section-6.6.1",
         "Internal Server Error - Async Operation Failed",
         ErrorCategory.SYSTEM
     ),
@@ -105,7 +96,6 @@ public enum PostconditionErrorType implements ErrorType {
         "RESOURCE_CLEANUP_FAILED",
         "Failed to clean up resources: %s",
             HttpStatus.INTERNAL_SERVER_ERROR.code(),  // Internal Server Error
-        "https://tools.ietf.org/html/rfc7231#section-6.6.1",
         "Internal Server Error - Resource Cleanup Failed",
         ErrorCategory.SYSTEM
     );
@@ -119,12 +109,12 @@ public enum PostconditionErrorType implements ErrorType {
     private final ErrorCategory category;
 
     PostconditionErrorType(int typeNumber, String code, String messageTemplate, int httpStatus,
-                          String problemType, String problemTitle, ErrorCategory category) {
+                          String problemTitle, ErrorCategory category) {
         this.typeNumber = typeNumber;
         this.code = code;
         this.messageTemplate = messageTemplate;
         this.httpStatus = httpStatus;
-        this.problemType = URI.create(problemType);
+        this.problemType = ErrorType.problemType(category, "postcondition", code);
         this.problemTitle = problemTitle;
         this.category = category;
     }

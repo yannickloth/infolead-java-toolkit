@@ -3,31 +3,34 @@ package eu.infolead.jtk.logic;
 import static eu.infolead.jtk.lang.SonarLintWarning.JAVA_S1172;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import eu.infolead.jtk.fp.Filterable;
 
 /**
  * Represents the classical two-valued boolean, which may have the value
- * {@link Bool#TRUE} or {@link Bool#False}.
- * 
+ * {@link Bool#TRUE} or {@link Bool#FALSE}.
+ *
  * <h3>Notes</h3>
  * <ol>
  * <li>The API of this class SHOULD always consume and return unboxed
- * {@code boolean} instances instead of boxed
- * {@link Boolean} instances: only
- * the unboxed ones have only two possible values like instances of this class.
- * The boxed ones have the
- * third possible value {@code null}, and the classical two-valued logic does
- * not define how to handle {@code null}.</li>
+ * {@code boolean} instances instead of boxed {@link Boolean} instances: only the
+ * unboxed ones have only two possible values like instances of this class. The
+ * boxed ones have the third possible value {@code null}, and the classical
+ * two-valued logic does not define how to handle {@code null}.</li>
  * <li>As a consequence of the preceding discussion/point, the API of this class
  * MUST never allow {@code null} as an argument or a return value.</li>
  * </ol>
  */
 public abstract sealed class Bool implements Serializable, Filterable<Bool> {
+    private static final long serialVersionUID = 1L;
+
+    private Bool() {
+        // sealed hierarchy: instances are the TRUE and FALSE constants
+    }
+
     public static final Bool TRUE = new True();
     public static final Bool FALSE = new False();
 
@@ -35,21 +38,29 @@ public abstract sealed class Bool implements Serializable, Filterable<Bool> {
         return value ? TRUE : FALSE;
     }
 
+    /**
+     * Returns the specified value after checking that it is not {@code null}.
+     *
+     * @param value the value to return
+     * @return {@code value}
+     * @throws NullPointerException if {@code value} is {@code null}
+     */
     public static Bool of(final Bool value) {
-        return value;
+        return Objects.requireNonNull(value, "value must not be null; use NullableBool for three-valued logic");
     }
 
     public final Bool negate() {
         return Bool.of(!toBoolean());
     }
 
-    public static final Bool negate(final Bool b) {
-        return b.negate();
+    public static Bool negate(final Bool b) {
+        return of(b).negate();
     }
 
     public abstract Bool and(Supplier<Bool> bool);
 
     public Bool and(final Bool bool) {
+        Objects.requireNonNull(bool, "bool");
         return and(() -> bool);
     }
 
@@ -103,25 +114,26 @@ public abstract sealed class Bool implements Serializable, Filterable<Bool> {
 
     public abstract boolean toBoolean();
 
-    public Stream<Bool> filter(final Predicate<Bool> p) {
-        return Stream.of(this).filter(p);
-    }
-
     static final class True extends Bool {
+        private static final long serialVersionUID = 1L;
+
+        private True() {
+        }
 
         @Override
         public Bool and(final Supplier<Bool> boolSupplier) {
-            return boolSupplier.get();
+            return of(Objects.requireNonNull(boolSupplier, "boolSupplier").get());
         }
 
         @Override
         public Bool or(final Bool bool) {
+            Objects.requireNonNull(bool, "bool");
             return this;
         }
 
         @Override
         public Bool xor(final Bool bool) {
-            return bool.fold(() -> Bool.TRUE, () -> Bool.FALSE);
+            return of(bool).fold(() -> Bool.TRUE, () -> Bool.FALSE);
         }
 
         @Override
@@ -136,54 +148,63 @@ public abstract sealed class Bool implements Serializable, Filterable<Bool> {
 
         @Override
         public Bool ifTrue(final Runnable trueAction) {
-            trueAction.run();
+            Objects.requireNonNull(trueAction, "trueAction").run();
             return this;
         }
 
         @Override
         public Bool ifFalse(final Consumer<Bool> falseConsumer) {
-            // do nothing
             return this;
         }
 
         @Override
         public Bool ifTrue(final Consumer<Bool> trueConsumer) {
-            trueConsumer.accept(TRUE);
+            Objects.requireNonNull(trueConsumer, "trueConsumer").accept(TRUE);
             return this;
         }
 
         @Override
         public <R> R fold(final Supplier<R> falseSupplier, final Supplier<R> trueSupplier) {
-            return trueSupplier.get();
+            return Objects.requireNonNull(trueSupplier, "trueSupplier").get();
         }
 
         @Override
         public Bool apply(final Runnable falseAction, final Runnable trueAction) {
-            trueAction.run();
+            Objects.requireNonNull(trueAction, "trueAction").run();
             return this;
         }
 
         @Override
         public Bool apply(final Consumer<Bool> falseConsumer, final Consumer<Bool> trueConsumer) {
-            trueConsumer.accept(TRUE);
+            Objects.requireNonNull(trueConsumer, "trueConsumer").accept(TRUE);
             return this;
+        }
+
+        private Object readResolve() {
+            return TRUE;
         }
     }
 
     static final class False extends Bool {
+        private static final long serialVersionUID = 1L;
+
+        private False() {
+        }
+
         @Override
         public Bool and(final Supplier<Bool> bool) {
+            Objects.requireNonNull(bool, "bool");
             return this;
         }
 
         @Override
         public Bool or(final Bool bool) {
-            return bool;
+            return of(bool);
         }
 
         @Override
         public Bool xor(final Bool bool) {
-            return bool.fold(() -> Bool.FALSE, () -> Bool.TRUE);
+            return of(bool).fold(() -> Bool.FALSE, () -> Bool.TRUE);
         }
 
         @Override
@@ -193,19 +214,18 @@ public abstract sealed class Bool implements Serializable, Filterable<Bool> {
 
         @Override
         public Bool ifFalse(final Runnable falseAction) {
-            falseAction.run();
+            Objects.requireNonNull(falseAction, "falseAction").run();
             return this;
         }
 
         @Override
         public Bool ifTrue(final Runnable trueAction) {
-            // do nothing
             return this;
         }
 
         @Override
         public Bool ifFalse(final Consumer<Bool> falseConsumer) {
-            falseConsumer.accept(FALSE);
+            Objects.requireNonNull(falseConsumer, "falseConsumer").accept(FALSE);
             return this;
         }
 
@@ -216,18 +236,22 @@ public abstract sealed class Bool implements Serializable, Filterable<Bool> {
 
         @Override
         public <R> R fold(final Supplier<R> falseSupplier, final Supplier<R> trueSupplier) {
-            return falseSupplier.get();
+            return Objects.requireNonNull(falseSupplier, "falseSupplier").get();
         }
 
         @Override
         public Bool apply(final Runnable falseAction, final Runnable trueAction) {
-            falseAction.run();
+            Objects.requireNonNull(falseAction, "falseAction").run();
             return FALSE;
         }
 
         @Override
         public Bool apply(final Consumer<Bool> falseConsumer, final Consumer<Bool> trueConsumer) {
-            falseConsumer.accept(FALSE);
+            Objects.requireNonNull(falseConsumer, "falseConsumer").accept(FALSE);
+            return FALSE;
+        }
+
+        private Object readResolve() {
             return FALSE;
         }
     }

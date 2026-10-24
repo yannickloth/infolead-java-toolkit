@@ -2,12 +2,13 @@ package eu.infolead.jtk.anomaly.http;
 
 import java.net.URI;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import eu.infolead.jtk.fp.either.Maybe;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
+import eu.infolead.jtk.http.HttpStatusCode;
 
 /**
  * This interface represents the common error format defined by
@@ -83,8 +84,7 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
      * 
      * @return a {@link Maybe} with the title
      */
-    @JsonProperty("title")
-    @JsonInclude(Include.NON_EMPTY)
+    @JsonIgnore
     Maybe<String> getProblemTypeTitle();
 
     /**
@@ -122,8 +122,7 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
      * 
      * @return a {@link Maybe} with the status
      */
-    @JsonProperty("status")
-    @JsonInclude(Include.NON_EMPTY)
+    @JsonIgnore
     Maybe<Integer> getHttpStatus();
 
     /**
@@ -142,8 +141,7 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
      * 
      * @return a {@link Maybe} with the detail.
      */
-    @JsonProperty("detail")
-    @JsonInclude(Include.NON_EMPTY)
+    @JsonIgnore
     Maybe<String> getFullDetail();
 
     /**
@@ -161,26 +159,79 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
      * 
      * @return a {@link Maybe} with the instance URI
      */
-    @JsonProperty("instance")
-    @JsonInclude(Include.NON_EMPTY)
+    @JsonIgnore
     Maybe<URI> getProblemInstanceId();
 
     /**
-     * Validates this ProblemDetail according to RFC 7807 constraints.
-     * 
-     * @return true if this ProblemDetail is valid, false otherwise
+     * Returns the problem title as a nullable value suitable for JSON
+     * serialization.
+     *
+     * @return the title, or {@code null}
      */
+    @JsonProperty("title")
+    @JsonInclude(Include.NON_EMPTY)
+    default String getTitle() {
+        return getProblemTypeTitle().orNull();
+    }
+
+    /**
+     * Returns the HTTP status as a nullable value suitable for JSON
+     * serialization.
+     *
+     * @return the status, or {@code null}
+     */
+    @JsonProperty("status")
+    @JsonInclude(Include.NON_EMPTY)
+    default Integer getStatusValue() {
+        return getHttpStatus().orNull();
+    }
+
+    /**
+     * Returns the detail as a nullable value suitable for JSON serialization.
+     *
+     * @return the detail, or {@code null}
+     */
+    @JsonProperty("detail")
+    @JsonInclude(Include.NON_EMPTY)
+    default String getDetail() {
+        return getFullDetail().orNull();
+    }
+
+    /**
+     * Returns the instance URI as a nullable value suitable for JSON
+     * serialization.
+     *
+     * @return the instance URI, or {@code null}
+     */
+    @JsonProperty("instance")
+    @JsonInclude(Include.NON_EMPTY)
+    default URI getInstance() {
+        return getProblemInstanceId().orNull();
+    }
+
+    /**
+     * Validates this ProblemDetail according to RFC 7807 constraints.
+     *
+     * @return {@code true} if this ProblemDetail is valid, {@code false} otherwise
+     */
+    @JsonIgnore
     default boolean isValid() {
-        return getProblemType() != null;
+        final URI type = getProblemType();
+        if (type == null) {
+            return false;
+        }
+        return getHttpStatus().fold(() -> true, status -> HttpStatusCode.isValid(status).toBoolean());
     }
 
     /**
      * Checks if this ProblemDetail uses the "about:blank" problem type.
-     * 
-     * @return true if this uses the "about:blank" type, false otherwise
+     *
+     * @return {@code true} if this uses the "about:blank" type, {@code false}
+     *         otherwise
      */
+    @JsonIgnore
     default boolean isAboutBlank() {
-        return "about:blank".equals(getProblemType().toString());
+        return getProblemType() != null && "about:blank".equals(getProblemType().toString());
     }
 
     /**

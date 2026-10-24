@@ -7,14 +7,10 @@
 		<groupId>eu.infolead.javatoolkit</groupId>
 		<artifactId>jtk-parent</artifactId>
 		<relativePath>../jtk-parent</relativePath>
-		<version>0.0.1-SNAPSHOT</version>
+		<version>0.0.1</version>
 	</parent>
-	<groupId>eu.infolead.javatoolkit</groupId>
 	<artifactId>jtk-currency</artifactId>
 
 	<name>Infolead Java toolkit - Currency</name>
 	<description>Infolead Java toolkit - Currency module</description>
-	<properties>
-		<java.version>17</java.version>
-	</properties>
 </project>

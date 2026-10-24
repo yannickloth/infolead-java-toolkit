@@ -8,13 +8,13 @@ public enum ResourceErrorType implements ErrorType {
 
     NOT_FOUND(
         6001, "NOT_FOUND", "Resource with ID %s not found",
-            HttpStatus.NOT_FOUND.code(), "https://tools.ietf.org/html/rfc7231#section-6.5.4", "Not Found",
+            HttpStatus.NOT_FOUND.code(), "Not Found",
         ErrorCategory.RESOURCE
     ),
 
     ALREADY_EXISTS(
         6002, "ALREADY_EXISTS", "Resource with ID %s already exists",
-            HttpStatus.CONFLICT.code(), "https://tools.ietf.org/html/rfc7231#section-6.5.8", "Conflict - Resource Already Exists",
+            HttpStatus.CONFLICT.code(), "Conflict - Resource Already Exists",
         ErrorCategory.RESOURCE
     );
 
@@ -27,12 +27,12 @@ public enum ResourceErrorType implements ErrorType {
     private final ErrorCategory category;
 
     ResourceErrorType(int typeNumber, String code, String messageTemplate, int httpStatus,
-                     String problemType, String problemTitle, ErrorCategory category) {
+                     String problemTitle, ErrorCategory category) {
         this.typeNumber = typeNumber;
         this.code = code;
         this.messageTemplate = messageTemplate;
         this.httpStatus = httpStatus;
-        this.problemType = URI.create(problemType);
+        this.problemType = ErrorType.problemType(category, "resource", code);
         this.problemTitle = problemTitle;
         this.category = category;
     }

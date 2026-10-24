@@ -1,5 +1,6 @@
 package eu.infolead.jtk.fp;
 
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -12,6 +13,7 @@ import eu.infolead.jtk.anomaly.PreconditionError;
 import eu.infolead.jtk.anomaly.PreconditionErrorType;
 import eu.infolead.jtk.anomaly.SystemError;
 import eu.infolead.jtk.fp.either.Either;
+import eu.infolead.jtk.fp.either.Maybe;
 import eu.infolead.jtk.fp.either.Result;
 
 /**
@@ -38,7 +40,7 @@ public final class Contracts {
      */
     public static void preCond(boolean condition, String message) {
         if (!condition) {
-            throw new PreconditionError(message, PreconditionErrorType.PRECONDITION_FAILED, message).toException();
+            throw new PreconditionError(message, PreconditionErrorType.PRECONDITION_FAILED).toException();
         }
     }
 
@@ -53,7 +55,7 @@ public final class Contracts {
     public static void preCond(boolean condition, String messageFormat, Object... args) {
         if (!condition) {
             String message = String.format(messageFormat, args);
-            throw new PreconditionError(message, PreconditionErrorType.PRECONDITION_FAILED, message).toException();
+            throw new PreconditionError(message, PreconditionErrorType.PRECONDITION_FAILED).toException();
         }
     }
 
@@ -102,7 +104,7 @@ public final class Contracts {
      */
     public static <T> T requireArgumentWithMessage(T argument, Predicate<T> predicate, String message) {
         if (!predicate.test(argument)) {
-            throw ParameterError.unsupportedValue("argument", argument).toException();
+            throw ParameterError.unsupportedValue("argument", argument, message).toException();
         }
         return argument;
     }
@@ -148,7 +150,7 @@ public final class Contracts {
      */
     public static void ensureThat(boolean condition, String message) {
         if (!condition) {
-            throw new PostconditionError(message, PostconditionErrorType.EXPECTED_STATE_NOT_REACHED, message).toException();
+            throw new PostconditionError(message, PostconditionErrorType.EXPECTED_STATE_NOT_REACHED).toException();
         }
     }
 
@@ -163,7 +165,7 @@ public final class Contracts {
     public static void ensureThat(boolean condition, String messageFormat, Object... args) {
         if (!condition) {
             String message = String.format(messageFormat, args);
-            throw new PostconditionError(message, PostconditionErrorType.EXPECTED_STATE_NOT_REACHED, message).toException();
+            throw new PostconditionError(message, PostconditionErrorType.EXPECTED_STATE_NOT_REACHED).toException();
         }
     }
 
@@ -196,8 +198,9 @@ public final class Contracts {
      * @return Either.right(value) if condition is true, Either.left(error) otherwise
      */
     public static <T> Either<SystemError, T> checkPrecondition(T value, boolean condition, String message) {
-        return condition ? Either.right(value) : 
-               Either.left(new PreconditionError(message, PreconditionErrorType.PRECONDITION_FAILED, message));
+        return condition ? Either.right(value)
+                : Either.left(new PreconditionError(message, PreconditionErrorType.PRECONDITION_FAILED,
+                        new Object[0], Maybe.ofNullable(value), Maybe.none()));
     }
 
     /**
@@ -210,9 +213,10 @@ public final class Contracts {
      * @return Either.right(value) if predicate passes, Either.left(error) otherwise
      */
     public static <T> Either<SystemError, T> checkPrecondition(T value, Predicate<T> predicate, String errorMessage) {
-        return predicate.test(value) 
-            ? Either.right(value) 
-            : Either.left(new PreconditionError(errorMessage, PreconditionErrorType.PRECONDITION_FAILED, value));
+        return predicate.test(value)
+                ? Either.right(value)
+                : Either.left(new PreconditionError(errorMessage, PreconditionErrorType.PRECONDITION_FAILED,
+                        new Object[0], Maybe.ofNullable(value), Maybe.none()));
     }
 
     /**
@@ -225,9 +229,11 @@ public final class Contracts {
      * @return Either.right(result) if condition is true, Either.left(error) otherwise
      */
     public static <T> Either<SystemError, T> checkPostcondition(T result, boolean condition, String errorMessage) {
-        return condition 
-            ? Either.right(result) 
-            : Either.left(new PostconditionError(errorMessage, PostconditionErrorType.EXPECTED_STATE_NOT_REACHED, result));
+        return condition
+                ? Either.right(result)
+                : Either.left(new PostconditionError(errorMessage,
+                        PostconditionErrorType.EXPECTED_STATE_NOT_REACHED,
+                        new Object[0], Maybe.ofNullable(result), Maybe.none()));
     }
 
     /**
@@ -238,17 +244,36 @@ public final class Contracts {
      * @param postcondition the condition the result must satisfy
      * @param errorMessage the error message if postcondition fails
      * @return Result with the computation result or contract error
+     * @throws NullPointerException if {@code computation}, {@code postcondition},
+     *                              or {@code errorMessage} is {@code null}
      */
-    public static <T> Result<SystemError, T> withPostcondition(Supplier<T> computation, 
-                                                               Predicate<T> postcondition, 
+    public static <T> Result<SystemError, T> withPostcondition(Supplier<T> computation,
+                                                               Predicate<T> postcondition,
                                                                String errorMessage) {
+        Objects.requireNonNull(computation, "computation");
+        Objects.requireNonNull(postcondition, "postcondition");
+        Objects.requireNonNull(errorMessage, "errorMessage");
+        final T result;
         try {
-            T result = computation.get();
-            return postcondition.test(result) 
-                ? Result.success(result)
-                : Result.failure(new PostconditionError(errorMessage, PostconditionErrorType.EXPECTED_STATE_NOT_REACHED, result));
-        } catch (Exception e) {
-            return Result.failure(new PostconditionError("Computation failed: " + e.getMessage(), PostconditionErrorType.EXPECTED_STATE_NOT_REACHED));
+            result = computation.get();
+        } catch (final RuntimeException exception) {
+            final String message = errorMessage + " (computation failed: " + exception.getMessage() + ")";
+            return Result.failure(new PostconditionError(
+                    message,
+                    PostconditionErrorType.EXPECTED_STATE_NOT_REACHED,
+                    new Object[0], Maybe.none(), Maybe.none()));
+        }
+        try {
+            return postcondition.test(result)
+                    ? Result.success(result)
+                    : Result.failure(new PostconditionError(
+                            errorMessage, PostconditionErrorType.EXPECTED_STATE_NOT_REACHED,
+                            new Object[0], Maybe.ofNullable(result), Maybe.none()));
+        } catch (final RuntimeException exception) {
+            final String message = errorMessage + " (postcondition failed: " + exception.getMessage() + ")";
+            return Result.failure(new PostconditionError(
+                    message, PostconditionErrorType.EXPECTED_STATE_NOT_REACHED,
+                    new Object[0], Maybe.none(), Maybe.none()));
         }
     }
 }

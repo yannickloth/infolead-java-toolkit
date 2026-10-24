@@ -3,8 +3,8 @@ package eu.infolead.jtk.fp.either;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -51,28 +51,6 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
      */
     static <G, D> Either<G, D> left(final G value) {
         return new Left<>(value);
-    }
-
-    /**
-     * Returns a new empty right instance.
-     * 
-     * @param <G> the type of the left value
-     * @param <D> the type of the right value
-     * @return a new empty right instance.
-     */
-    static <G, D> Either<G, D> right() {
-        return new Right<>(null);
-    }
-
-    /**
-     * Returns a new empty left instance.
-     * 
-     * @param <G> the type of the left value
-     * @param <D> the type of the right value
-     * @return a new empty left instance.
-     */
-    static <G, D> Either<G, D> left() {
-        return new Left<>(null);
     }
 
     /**
@@ -148,24 +126,40 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
     }
 
     /**
-     * Another name for {@link Either#flatMap(Mapper))}.
-     * 
-     * @param <G>
-     * @param <D>
-     * @param <A>
-     * @param mapper
-     * @return
+     * Another name for {@link Either#flatMap(Mapper)}.
+     *
+     * @param <G>    the new left type
+     * @param <D>    the new right type
+     * @param mapper the railway switch applied to the right value
+     * @return this if it is a left instance, otherwise the mapped either
      */
     @AliasFor(type = Either.class, method = "flatMap")
     default <G extends L, D> Either<G, D> bind(final Mapper<Either<G, D>, ? super R> mapper) {
         return flatMap(mapper);
     }
 
+    /**
+     * Another name for {@link Either#flatMap(Supplier)}.
+     *
+     * @param <G>      the new left type
+     * @param <D>      the new right type
+     * @param <E>      the concrete either type returned by the supplier
+     * @param supplier provides the next either
+     * @return this if it is a left instance, otherwise the supplied either
+     */
     @AliasFor(type = Either.class, method = "flatMap")
     default <G extends L, D, E extends Either<G, D>> E bind(final Supplier<E> supplier) {
         return flatMap(supplier);
     }
 
+    /**
+     * Alias for {@link Either#flatMap(Mapper)}.
+     *
+     * @param <G>    the new left type
+     * @param <D>    the new right type
+     * @param mapper the railway switch applied to the right value
+     * @return this if it is a left instance, otherwise the mapped either
+     */
     @AliasFor(type = Either.class, method = "flatMap")
     default <G extends L, D> Either<G, D> andThen(final Mapper<Either<G, D>, ? super R> mapper) {
         return flatMap(mapper);
@@ -186,26 +180,32 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
         return flatMap(supplier);
     }
 
+    @AliasFor(type = Either.class, method = "flatMapLeft")
     default <E extends Either<L, R>> E bindLeft(final Mapper<E, ? super L> mapper) {
         return flatMapLeft(mapper);
     }
 
+    @AliasFor(type = Either.class, method = "flatMapLeft")
     default <E extends Either<L, R>> E bindLeft(final Supplier<E> supplier) {
         return flatMapLeft(supplier);
     }
 
+    @AliasFor(type = Either.class, method = "flatMapLeft")
     default <E extends Either<L, R>> E leftAndThen(final Mapper<E, ? super L> mapper) {
         return flatMapLeft(mapper);
     }
 
+    @AliasFor(type = Either.class, method = "flatMapLeft")
     default <E extends Either<L, R>> E leftAndThen(final Supplier<E> supplier) {
         return flatMapLeft(supplier);
     }
 
+    @AliasFor(type = Either.class, method = "flatMapLeft")
     default <E extends Either<L, R>> E ifLeftDo(final Mapper<E, ? super L> mapper) {
         return flatMapLeft(mapper);
     }
 
+    @AliasFor(type = Either.class, method = "flatMapLeft")
     default <E extends Either<L, R>> E ifLeftDo(final Supplier<E> supplier) {
         return flatMapLeft(supplier);
     }
@@ -243,11 +243,13 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
     <E extends Either<R, L>> E swap();
 
     /**
-     * <h3>Note</h3>
-     * It is not currently clear whether this method makes sense: what would be its
-     * use-case?
-     * 
-     * @return
+     * Returns this instance if it is a right instance, otherwise {@code null}.
+     * <p>
+     * <strong>Note:</strong> prefer {@link #orElse(Either)} or {@link #isRight()}
+     * when a null result would be ambiguous.
+     *
+     * @param <E> the concrete either type
+     * @return this instance for a right value, {@code null} for a left value
      */
     @SuppressWarnings(CompilerWarning.UNCHECKED)
     default <E extends Either<L, R>> E orElseNull() {
@@ -438,15 +440,19 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
     }
 
     /**
-     * Merge an Either where both sides have the same type.
-     * 
-     * @param <T> the common type of both sides
+     * Merges an either whose left and right types are expected to be the same.
+     * <p>
+     * This method cannot enforce that {@code L} and {@code R} are identical at
+     * compile time. If they differ at runtime, the cast to {@code T} may fail with
+     * a {@link ClassCastException} once the result is used.
+     *
+     * @param <T> the expected common type of both sides
      * @return the value from either side
-     * @throws UnsupportedOperationException if L and R are not the same type
+     * @throws ClassCastException if the contained value is not assignable to
+     *                            {@code T}
      */
     @SuppressWarnings(CompilerWarning.UNCHECKED)
     default <T> T merge() {
-        // This is a compile-time constraint - L and R must be the same type
         return fold(l -> (T) l, r -> (T) r);
     }
 
@@ -539,11 +545,13 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
      * @param mapper function that transforms elements and might fail
      * @return Either containing list of all results, or first error
      */
-    static <L, T, R> Either<L, List<R>> traverse(final Collection<T> collection, 
+    static <L, T, R> Either<L, List<R>> traverse(final Collection<T> collection,
                                                  final Mapper<Either<L, R>, ? super T> mapper) {
-        List<R> results = new ArrayList<>();
-        for (T element : collection) {
-            Either<L, R> result = mapper.map(element);
+        Objects.requireNonNull(collection, "collection");
+        Objects.requireNonNull(mapper, "mapper");
+        final List<R> results = new ArrayList<>(collection.size());
+        for (final T element : collection) {
+            final Either<L, R> result = Objects.requireNonNull(mapper.map(element), "mapper returned null");
             if (result.isLeft().toBoolean()) {
                 return Either.left(result.fold(Fn::identity, r -> null));
             }

@@ -1,10 +1,13 @@
 package eu.infolead.jtk.anomaly;
 
 import java.net.URI;
+import java.util.Locale;
+import java.util.Objects;
 
 import eu.infolead.jtk.anomaly.http.ProblemDetail;
 import eu.infolead.jtk.anomaly.http.StandardProblemDetail;
 import eu.infolead.jtk.fp.either.Maybe;
+import eu.infolead.jtk.http.HttpStatusCode;
 
 /**
  * Interface for error types that can be mapped to HTTP responses and ProblemDetail.
@@ -14,6 +17,29 @@ import eu.infolead.jtk.fp.either.Maybe;
  * while maintaining consistency in error handling and HTTP response generation.</p>
  */
 public interface ErrorType {
+
+    /** Base URL of all RFC 7807 problem type identifiers. */
+    String PROBLEM_BASE = "https://errors.infolead.eu/problems/";
+
+    /**
+     * Builds an RFC 7807 problem type URI for an error type. The namespace
+     * should be the enum that declares the type so that equal codes in
+     * different enums do not collide.
+     *
+     * @param category  the error category
+     * @param namespace the declaring type
+     * @param code      the stable error code
+     * @return a URI uniquely identifying the error type
+     */
+    static URI problemType(final ErrorCategory category, final String namespace, final String code) {
+        Objects.requireNonNull(category, "category");
+        Objects.requireNonNull(namespace, "namespace");
+        Objects.requireNonNull(code, "code");
+        return URI.create(PROBLEM_BASE
+                + category.name().toLowerCase(Locale.ROOT).replace('_', '-')
+                + "/" + namespace.toLowerCase(Locale.ROOT).replace('_', '-')
+                + "/" + code.toLowerCase(Locale.ROOT).replace('_', '-'));
+    }
 
     /**
      * Returns the unique error code for this error type.
@@ -110,20 +136,41 @@ public interface ErrorType {
 
     /**
      * Formats the error message with the provided arguments.
-     * Default implementation returns the message template as-is.
-     * 
+     * <p>
+     * When no arguments are supplied, the raw template is returned. If the
+     * template cannot be formatted with the supplied arguments, the raw template
+     * is returned instead: error reporting must not mask the original failure by
+     * throwing from a logging or response-building path.
+     *
      * @param args arguments to substitute in the message template
-     * @return the formatted error message
+     * @return the formatted error message, or the raw template when formatting
+     *         fails
      */
-    default String formatMessage(Object... args) {
+    default String formatMessage(final Object... args) {
+        Objects.requireNonNull(args, "args");
         if (args.length == 0) {
             return getMessageTemplate();
         }
         try {
             return String.format(getMessageTemplate(), args);
-        } catch (Exception e) {
+        } catch (final RuntimeException exception) {
             return getMessageTemplate();
         }
+    }
+
+    /**
+     * Returns a human-readable message for the case where no context arguments
+     * are available. Templates containing format specifiers fall back to the
+     * problem title so that raw placeholders are not exposed.
+     *
+     * @return a message without unresolved format specifiers
+     */
+    default String messageWithoutArgs() {
+        final String template = getMessageTemplate();
+        if (template == null) {
+            return getProblemTitle();
+        }
+        return template.matches("(?s).*%[a-zA-Z%].*") ? getProblemTitle() : template;
     }
 
     /**
@@ -133,7 +180,12 @@ public interface ErrorType {
      * @param instance optional instance URI
      * @return a ProblemDetail representing this error
      */
-    default ProblemDetail toProblemDetail(Maybe<String> detail, Maybe<URI> instance) {
+    default ProblemDetail toProblemDetail(final Maybe<String> detail, final Maybe<URI> instance) {
+        Objects.requireNonNull(detail, "detail");
+        Objects.requireNonNull(instance, "instance");
+        if (!HttpStatusCode.isValid(getHttpStatus()).toBoolean()) {
+            throw new IllegalStateException("Invalid HTTP status " + getHttpStatus() + " for error type " + getCode());
+        }
         return StandardProblemDetail.builder(getProblemType())
             .title(getProblemTitle())
             .status(getHttpStatus())
@@ -183,13 +235,14 @@ public interface ErrorType {
     }
 
     /**
-     * Generates a unique error ID with a timestamp-based instance identifier.
-     * Uses current system time in milliseconds as the instance ID.
-     * 
-     * @return the formatted error ID with timestamp instance
+     * Generates a unique error ID with a process token and a process-local,
+     * monotonically increasing instance identifier. The process token keeps IDs
+     * distinct across restarts and hosts.
+     *
+     * @return the formatted error ID
      */
     default String generateErrorId() {
-        return generateErrorId(System.currentTimeMillis());
+        return getTypeNumber() + "-" + ErrorIdSequence.next();
     }
 
     /**

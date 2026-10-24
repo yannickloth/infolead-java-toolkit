@@ -26,9 +26,20 @@ hs_err_pid*
 
 HELP.md
 target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+
+# Local secrets and environment overrides
+.env
+.env.*
+!.env.example
+application-local.properties
+application-local.yml
+application-local.yaml
+
+# Keep Maven wrapper JARs in every module, and test fixtures under resources
+!**/.mvn/wrapper/maven-wrapper.jar
+!**/src/test/resources/**/*.jar
+!**/src/test/resources/**/*.zip
+!**/src/test/resources/**/*.log
 
 ### STS ###
 .apt_generated
@@ -52,8 +63,6 @@ target/
 /nbdist/
 /.nb-gradle/
 build/
-!**/src/main/**/build/
-!**/src/test/**/build/
 
 ### VS Code ###
 .vscode/

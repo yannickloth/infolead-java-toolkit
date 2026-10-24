@@ -15,7 +15,6 @@ public enum PreconditionErrorType implements ErrorType {
         "SYSTEM_NOT_READY",
         "System is not ready: %s",
             HttpStatus.SERVICE_UNAVAILABLE.code(),  // Service Unavailable
-        "https://tools.ietf.org/html/rfc7231#section-6.6.4",
         "Service Unavailable - System Not Ready",
         ErrorCategory.SYSTEM
     ),
@@ -25,7 +24,6 @@ public enum PreconditionErrorType implements ErrorType {
         "CONFLICTING_STATE",
         "Operation conflicts with current state: %s",
             HttpStatus.CONFLICT.code(),  // Conflict
-        "https://tools.ietf.org/html/rfc7231#section-6.5.8",
         "Conflict - Conflicting State",
         ErrorCategory.BUSINESS_LOGIC
     ),
@@ -35,7 +33,6 @@ public enum PreconditionErrorType implements ErrorType {
         "INSUFFICIENT_PERMISSIONS",
         "Insufficient permissions: %s required",
             HttpStatus.FORBIDDEN.code(),  // Forbidden
-        "https://tools.ietf.org/html/rfc7231#section-6.5.3",
         "Forbidden - Insufficient Permissions",
         ErrorCategory.SECURITY
     ),
@@ -45,7 +42,6 @@ public enum PreconditionErrorType implements ErrorType {
         "RESOURCE_LOCKED",
         "%s %s is currently locked",
             HttpStatus.LOCKED.code(),  // Locked
-        "https://tools.ietf.org/html/rfc4918#section-11.3",
         "Locked - Resource Unavailable",
         ErrorCategory.RESOURCE
     ),
@@ -55,7 +51,6 @@ public enum PreconditionErrorType implements ErrorType {
         "OPERATION_NOT_ALLOWED",
         "Operation '%s' not allowed in state '%s'",
             HttpStatus.METHOD_NOT_ALLOWED.code(),  // Method Not Allowed
-        "https://tools.ietf.org/html/rfc7231#section-6.5.5",
         "Method Not Allowed - Operation Not Permitted",
         ErrorCategory.BUSINESS_LOGIC
     ),
@@ -65,7 +60,6 @@ public enum PreconditionErrorType implements ErrorType {
         "RATE_LIMIT_EXCEEDED",
         "Rate limit exceeded: %s",
             HttpStatus.TOO_MANY_REQUESTS.code(),  // Too Many Requests
-        "https://tools.ietf.org/html/rfc6585#section-4",
         "Too Many Requests - Rate Limit Exceeded",
         ErrorCategory.RATE_LIMIT
     ),
@@ -75,7 +69,6 @@ public enum PreconditionErrorType implements ErrorType {
         "MAINTENANCE_MODE",
         "System in maintenance mode (estimated duration: %s)",
             HttpStatus.SERVICE_UNAVAILABLE.code(),  // Service Unavailable
-        "https://tools.ietf.org/html/rfc7231#section-6.6.4",
         "Service Unavailable - Maintenance Mode",
         ErrorCategory.SYSTEM
     ),
@@ -85,7 +78,6 @@ public enum PreconditionErrorType implements ErrorType {
         "DEPENDENCY_UNAVAILABLE",
         "Required dependency unavailable: %s",
             HttpStatus.BAD_GATEWAY.code(),  // Bad Gateway
-        "https://tools.ietf.org/html/rfc7231#section-6.6.3",
         "Bad Gateway - Dependency Unavailable",
         ErrorCategory.EXTERNAL_SERVICE
     ),
@@ -95,7 +87,6 @@ public enum PreconditionErrorType implements ErrorType {
         "PRECONDITION_FAILED",
         "Precondition failed: %s",
             HttpStatus.PRECONDITION_FAILED.code(),  // Precondition Failed
-        "https://tools.ietf.org/html/rfc7232#section-4.2",
         "Precondition Failed",
         ErrorCategory.BUSINESS_LOGIC
     );
@@ -109,12 +100,12 @@ public enum PreconditionErrorType implements ErrorType {
     private final ErrorCategory category;
 
     PreconditionErrorType(int typeNumber, String code, String messageTemplate, int httpStatus,
-                         String problemType, String problemTitle, ErrorCategory category) {
+                         String problemTitle, ErrorCategory category) {
         this.typeNumber = typeNumber;
         this.code = code;
         this.messageTemplate = messageTemplate;
         this.httpStatus = httpStatus;
-        this.problemType = URI.create(problemType);
+        this.problemType = ErrorType.problemType(category, "precondition", code);
         this.problemTitle = problemTitle;
         this.category = category;
     }

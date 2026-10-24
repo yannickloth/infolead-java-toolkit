@@ -18,7 +18,7 @@
  *   <li><strong>Usage:</strong> Web API validation, form processing, business rule checking</li>
  * </ul>
  * 
- * <h3>2. Contract Errors ({@link eu.infolead.jtk.fp.ContractError})</h3>
+ * <h3>2. Contract Errors ({@link eu.infolead.jtk.anomaly.SystemError})</h3>
  * <ul>
  *   <li><strong>Purpose:</strong> Handle programming errors and contract violations</li>
  *   <li><strong>Examples:</strong> Null parameter passed, method precondition violated, invariant broken</li>
@@ -37,15 +37,14 @@
  * <h4>{@link eu.infolead.jtk.fp.either.Either#flatMap()}</h4>
  * <ol>
  * <li>{@code flatMap()} is sometimes also called {@code bind()},
- * {@code andThen()} or {@code ifSomeDo()}.
+ * {@code andThen()} or {@code ifRightDo()}.
  * <li>
  * With {@link eu.infolead.jtk.fp.either.Either#flatMap()}, the specified mapping
  * function
  * is applied on the value and returns a new {@link Either} instance.
  * </li>
- * <p>
- * Cf. reference WLA1.
  * </ol>
+ * <p>Cf. reference WLA1.</p>
  * <h3>Two-track processing</h3>
  * <h4>Preliminary definition and concepts</h4>
  * In the following, {@code Either} instance means an
@@ -87,6 +86,7 @@
  * <h2>Validation vs Contract Error Decision Guide</h2>
  * 
  * <table border="1">
+ * <caption>Validation vs Contract error decision guide</caption>
  * <tr>
  *   <th>Scenario</th>
  *   <th>Error Type</th>
@@ -99,7 +99,7 @@
  * </tr>
  * <tr>
  *   <td>API receives null for required parameter</td>
- *   <td>ContractError</td>
+ *   <td>SystemError</td>
  *   <td>API contract violation, indicates client programming error</td>
  * </tr>
  * <tr>
@@ -109,7 +109,7 @@
  * </tr>
  * <tr>
  *   <td>Method called with negative array index</td>
- *   <td>ContractError</td>
+ *   <td>SystemError</td>
  *   <td>Precondition violation, programming error</td>
  * </tr>
  * </table>

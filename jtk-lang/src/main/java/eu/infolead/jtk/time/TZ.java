@@ -3,6 +3,18 @@ package eu.infolead.jtk.time;
 import java.time.ZoneId;
 import java.util.TimeZone;
 
+/**
+ * IANA time-zone identifiers.
+ * <p>
+ * The enum constants mirror the identifiers accepted by {@link ZoneId}; the
+ * {@code Etc/GMT+} and {@code Etc/GMT-} signs are inverted by the IANA
+ * convention, so {@code ETC_GMT_PLUS1} maps to {@code Etc/GMT+1}.
+ * <p>
+ * Some constants are IANA backward-compatibility links to the same zone (for
+ * example {@code AMERICA_ADAK} and {@code AMERICA_ATKA}). This enum therefore
+ * does not provide a reverse lookup: code that builds a map keyed by zone id
+ * must merge aliases explicitly.
+ */
 public enum TZ {
     AFRICA_ABIDJAN("Africa/Abidjan"),
     AFRICA_ACCRA("Africa/Accra"),
@@ -63,8 +75,11 @@ public enum TZ {
     AMERICA_ANGUILLA("America/Anguilla"),
     AMERICA_ANTIGUA("America/Antigua"),
     AMERICA_ARAGUAINA("America/Araguaina"),
-    AMERICA_ARGENTINA("America/Argentina/Catamarca"),
     AMERICA_ARGENTINA_BUENOS_AIRES("America/Argentina/Buenos_Aires"),
+    AMERICA_ARGENTINA_CATAMARCA("America/Argentina/Catamarca"),
+    /** @deprecated use {@link #AMERICA_ARGENTINA_CATAMARCA}. */
+    @Deprecated(forRemoval = true)
+    AMERICA_ARGENTINA("America/Argentina/Catamarca"),
     AMERICA_ARGENTINA_COMOD_RIVADAVIA("America/Argentina/ComodRivadavia"),
     AMERICA_ARGENTINA_CORDOBA("America/Argentina/Cordoba"),
     AMERICA_ARGENTINA_JUJUY("America/Argentina/Jujuy"),
@@ -130,6 +145,9 @@ public enum TZ {
     AMERICA_HALIFAX("America/Halifax"),
     AMERICA_HAVANA("America/Havana"),
     AMERICA_HERMOSILLO("America/Hermosillo"),
+    AMERICA_INDIANA_PETERSBURG("America/Indiana/Petersburg"),
+    /** @deprecated use {@link #AMERICA_INDIANA_PETERSBURG}. */
+    @Deprecated(forRemoval = true)
     AMERICA_INDIANA("America/Indiana/Petersburg"),
     AMERICA_INDIANAPOLIS("America/Indianapolis"),
     AMERICA_INDIANA_INDIANAPOLIS("America/Indiana/Indianapolis"),
@@ -144,6 +162,9 @@ public enum TZ {
     AMERICA_JAMAICA("America/Jamaica"),
     AMERICA_JUJUY("America/Jujuy"),
     AMERICA_JUNEAU("America/Juneau"),
+    AMERICA_KENTUCKY_LOUISVILLE("America/Kentucky/Louisville"),
+    /** @deprecated use {@link #AMERICA_KENTUCKY_LOUISVILLE}. */
+    @Deprecated(forRemoval = true)
     AMERICA_KENTUCKY("America/Kentucky/Louisville"),
     AMERICA_KENTUCKY_MONTICELLO("America/Kentucky/Monticello"),
     AMERICA_KNOX_IN("America/Knox_IN"),
@@ -176,6 +197,9 @@ public enum TZ {
     AMERICA_NIPIGON("America/Nipigon"),
     AMERICA_NOME("America/Nome"),
     AMERICA_NORONHA("America/Noronha"),
+    AMERICA_NORTH_DAKOTA_BEULAH("America/North_Dakota/Beulah"),
+    /** @deprecated use {@link #AMERICA_NORTH_DAKOTA_BEULAH}. */
+    @Deprecated(forRemoval = true)
     AMERICA_NORTH_DAKOTA("America/North_Dakota/Beulah"),
     AMERICA_NORTH_DAKOTA_CENTER("America/North_Dakota/Center"),
     AMERICA_NORTH_DAKOTA_NEW_SALEM("America/North_Dakota/New_Salem"),
@@ -330,6 +354,9 @@ public enum TZ {
     ASIA_ULAANBAATAR("Asia/Ulaanbaatar"),
     ASIA_ULAN_BATOR("Asia/Ulan_Bator"),
     ASIA_URUMQI("Asia/Urumqi"),
+    ASIA_UST_NERA("Asia/Ust-Nera"),
+    /** @deprecated use {@link #ASIA_UST_NERA}. */
+    @Deprecated(forRemoval = true)
     ASIA_USTNNERA("Asia/Ust-Nera"),
     ASIA_VIENTIANE("Asia/Vientiane"),
     ASIA_VLADIVOSTOK("Asia/Vladivostok"),
@@ -395,34 +422,34 @@ public enum TZ {
     EST5EDT("EST5EDT"),
     ETC_GMT("Etc/GMT"),
     ETC_GMT0("Etc/GMT0"),
-    ETC_GMT_MINUS0("Etc/GMT_MINUS0"),
-    ETC_GMT_MINUS1("Etc/GMT_MINUS1"),
-    ETC_GMT_MINUS10("Etc/GMT_MINUS10"),
-    ETC_GMT_MINUS11("Etc/GMT_MINUS11"),
-    ETC_GMT_MINUS12("Etc/GMT_MINUS12"),
-    ETC_GMT_MINUS13("Etc/GMT_MINUS13"),
-    ETC_GMT_MINUS14("Etc/GMT_MINUS14"),
-    ETC_GMT_MINUS2("Etc/GMT_MINUS2"),
-    ETC_GMT_MINUS3("Etc/GMT_MINUS3"),
-    ETC_GMT_MINUS4("Etc/GMT_MINUS4"),
-    ETC_GMT_MINUS5("Etc/GMT_MINUS5"),
-    ETC_GMT_MINUS6("Etc/GMT_MINUS6"),
-    ETC_GMT_MINUS7("Etc/GMT_MINUS7"),
-    ETC_GMT_MINUS8("Etc/GMT_MINUS8"),
-    ETC_GMT_MINUS9("Etc/GMT_MINUS9"),
-    ETC_GMT_PLUS0("Etc/GMT_PLUS0"),
-    ETC_GMT_PLUS1("Etc/GMT_PLUS1"),
-    ETC_GMT_PLUS10("Etc/GMT_PLUS10"),
-    ETC_GMT_PLUS11("Etc/GMT_PLUS11"),
-    ETC_GMT_PLUS12("Etc/GMT_PLUS12"),
-    ETC_GMT_PLUS2("Etc/GMT_PLUS2"),
-    ETC_GMT_PLUS3("Etc/GMT_PLUS3"),
-    ETC_GMT_PLUS4("Etc/GMT_PLUS4"),
-    ETC_GMT_PLUS5("Etc/GMT_PLUS5"),
-    ETC_GMT_PLUS6("Etc/GMT_PLUS6"),
-    ETC_GMT_PLUS7("Etc/GMT_PLUS7"),
-    ETC_GMT_PLUS8("Etc/GMT_PLUS8"),
-    ETC_GMT_PLUS9("Etc/GMT_PLUS9"),
+    ETC_GMT_MINUS0("Etc/GMT-0"),
+    ETC_GMT_MINUS1("Etc/GMT-1"),
+    ETC_GMT_MINUS10("Etc/GMT-10"),
+    ETC_GMT_MINUS11("Etc/GMT-11"),
+    ETC_GMT_MINUS12("Etc/GMT-12"),
+    ETC_GMT_MINUS13("Etc/GMT-13"),
+    ETC_GMT_MINUS14("Etc/GMT-14"),
+    ETC_GMT_MINUS2("Etc/GMT-2"),
+    ETC_GMT_MINUS3("Etc/GMT-3"),
+    ETC_GMT_MINUS4("Etc/GMT-4"),
+    ETC_GMT_MINUS5("Etc/GMT-5"),
+    ETC_GMT_MINUS6("Etc/GMT-6"),
+    ETC_GMT_MINUS7("Etc/GMT-7"),
+    ETC_GMT_MINUS8("Etc/GMT-8"),
+    ETC_GMT_MINUS9("Etc/GMT-9"),
+    ETC_GMT_PLUS0("Etc/GMT+0"),
+    ETC_GMT_PLUS1("Etc/GMT+1"),
+    ETC_GMT_PLUS10("Etc/GMT+10"),
+    ETC_GMT_PLUS11("Etc/GMT+11"),
+    ETC_GMT_PLUS12("Etc/GMT+12"),
+    ETC_GMT_PLUS2("Etc/GMT+2"),
+    ETC_GMT_PLUS3("Etc/GMT+3"),
+    ETC_GMT_PLUS4("Etc/GMT+4"),
+    ETC_GMT_PLUS5("Etc/GMT+5"),
+    ETC_GMT_PLUS6("Etc/GMT+6"),
+    ETC_GMT_PLUS7("Etc/GMT+7"),
+    ETC_GMT_PLUS8("Etc/GMT+8"),
+    ETC_GMT_PLUS9("Etc/GMT+9"),
     ETC_GREENWICH("Etc/Greenwich"),
     ETC_UCT("Etc/UCT"),
     ETC_UNIVERSAL("Etc/Universal"),
@@ -610,18 +637,32 @@ public enum TZ {
     private final String id;
 
     TZ(final String id) {
-        this.id = id;
+        this.id = java.util.Objects.requireNonNull(id, "id");
     }
 
     public String getId() {
         return id;
     }
 
+    /**
+     * Returns the Java {@link ZoneId} for this identifier.
+     *
+     * @return the zone id
+     * @throws java.time.DateTimeException if the runtime tzdb does not recognize
+     *                                     this identifier
+     */
     public ZoneId toZoneId() {
         return ZoneId.of(id);
     }
 
+    /**
+     * Returns the legacy {@link TimeZone} for this identifier.
+     *
+     * @return the time zone
+     * @throws java.time.DateTimeException if the runtime tzdb does not recognize
+     *                                     this identifier
+     */
     public TimeZone toJavaUtilTimeZone() {
-        return TimeZone.getTimeZone(id);
+        return TimeZone.getTimeZone(toZoneId());
     }
 }

@@ -15,13 +15,11 @@ import eu.infolead.jtk.fp.either.Result;
  * <p>
  * In Java, by default, any reference may be {@code null}. Using this container
  * class communicates the intent of the developer to never manipulate a
- * reference that may
- * be {@code null}.
- * 
+ * reference that may be {@code null}.
+ *
  * <p>
- * To rephrase: the reference to an {@link NN} MUST NOT
- * (ever)
- * be {@code null} and the contained value MUST NOT (ever) be {@code null}.
+ * To rephrase: the reference to an {@link NN} MUST NOT (ever) be {@code null}
+ * and the contained value MUST NOT (ever) be {@code null}.
  * </p>
  *
  * @param <T> the type of the contained value
@@ -33,12 +31,20 @@ public final class NN<T> implements Filterable<NN<T>>, Mappable<NN<T>>, Testable
         this.value = Objects.requireNonNull(value, "The specified value must not be null.");
     }
 
-    public static <V> Result<Void, NN<V>> of(final V value) {
-        try {
-            return Result.success(new NN<>(value));
-        } catch (final NullPointerException npe) {
-            return Result.failure(null/* TODO */);
+    /**
+     * Wraps the specified value, or returns a failed result explaining why the
+     * value is not acceptable.
+     *
+     * @param <V>   the value type
+     * @param value the value to wrap
+     * @return a successful result holding the non-null value, or a failure
+     *         carrying a diagnostic message
+     */
+    public static <V> Result<String, NN<V>> of(final V value) {
+        if (value == null) {
+            return Result.failure("The specified value must not be null.");
         }
+        return Result.success(new NN<>(value));
     }
 
     public T get() {
@@ -51,7 +57,7 @@ public final class NN<T> implements Filterable<NN<T>>, Mappable<NN<T>>, Testable
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }

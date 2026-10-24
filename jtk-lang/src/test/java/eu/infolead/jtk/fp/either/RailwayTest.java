@@ -2,9 +2,7 @@ package eu.infolead.jtk.fp.either;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest(classes = Result.class)
 public class RailwayTest {
   @Test
   public void testSuccessTrack() {

@@ -1,6 +1,5 @@
 package eu.infolead.jtk.http;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,6 +9,7 @@ import eu.infolead.jtk.fp.Fn;
 import eu.infolead.jtk.fp.either.Maybe;
 import eu.infolead.jtk.rfc.RfcReference;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 public enum HttpStatus implements HttpStatusCode {
     CONTINUE(100, "Continue", 9110, Maybe.of("15.2.1")),
@@ -272,36 +272,29 @@ public enum HttpStatus implements HttpStatusCode {
 
     private static Map<Integer, HttpStatus> initValues() {
         final Map<Integer, HttpStatus> values = new HashMap<>();
-        Arrays.stream(HttpStatus.values()).forEach(v -> values.put(v.code(), v));
+        for (final HttpStatus status : HttpStatus.values()) {
+            if (values.put(status.code(), status) != null) {
+                throw new IllegalStateException("Duplicate HTTP status code: " + status.code());
+            }
+        }
         return Collections.unmodifiableMap(values);
     }
 
     HttpStatus(@Nonnull final int code, @Nonnull final String description, @Nonnull final int rfcNumber,
             @Nonnull final Maybe<String> rfcSection) {
-        if (HttpStatusCode.isValid(code).toBoolean()) { // here we can't use fold because the instance is not
-                                                        // initialized yet
-            this.code = code;
-            this.reference = new RfcReference(rfcNumber);
-            this.description = description;
-            this.rfcSection = Objects.requireNonNull(rfcSection);
-            this.additionalInformation = Maybe.none();
-        } else {
-            throw new IllegalArgumentException("the specified HTTP status code is not valid.");
-        }
+        this(code, description, rfcNumber, rfcSection, null);
     }
 
     HttpStatus(@Nonnull final int code, @Nonnull final String description, @Nonnull final int rfcNumber,
-            @Nonnull final Maybe<String> rfcSection, final String additionalInfo) {
-        if (HttpStatusCode.isValid(code).toBoolean()) { // here we can't use fold because the instance is not
-                                                        // initialized yet
-            this.code = code;
-            this.reference = new RfcReference(rfcNumber);
-            this.description = description;
-            this.rfcSection = Objects.requireNonNull(rfcSection);
-            this.additionalInformation = Maybe.of(additionalInfo);
-        } else {
-            throw new IllegalArgumentException("the specified HTTP status code is not valid.");
+            @Nonnull final Maybe<String> rfcSection, @Nullable final String additionalInfo) {
+        if (!HttpStatusCode.isValid(code).toBoolean()) {
+            throw new IllegalArgumentException("Invalid HTTP status code: " + code);
         }
+        this.code = code;
+        this.reference = new RfcReference(rfcNumber);
+        this.description = Objects.requireNonNull(description, "description");
+        this.rfcSection = Objects.requireNonNull(rfcSection, "rfcSection");
+        this.additionalInformation = additionalInfo == null ? Maybe.none() : Maybe.of(additionalInfo);
     }
 
     @Override
@@ -329,9 +322,29 @@ public enum HttpStatus implements HttpStatusCode {
         return additionalInformation;
     }
 
-    public static HttpStatusCode of(@Nonnull final int code, @Nonnull final RfcReference rfcReference,
+    /**
+     * Returns the status matching the specified code, or a custom status when the
+     * code is not a known constant.
+     *
+     * @param code         the HTTP status code
+     * @param rfcReference the RFC defining the status
+     * @param rfcSection   the section of the RFC, if any
+     * @param description  the human-readable description
+     * @return the known status or a custom {@link HttpStatusCode}
+     * @throws IllegalArgumentException if the code is outside the valid HTTP range
+     * @throws NullPointerException if any metadata argument is {@code null} for
+     *                              an unknown code (known codes keep their
+     *                              built-in metadata)
+     */
+    public static HttpStatusCode of(final int code, @Nonnull final RfcReference rfcReference,
             @Nonnull final Maybe<String> rfcSection,
             @Nonnull final String description) {
+        Objects.requireNonNull(rfcReference, "rfcReference");
+        Objects.requireNonNull(rfcSection, "rfcSection");
+        Objects.requireNonNull(description, "description");
+        if (!HttpStatusCode.isValid(code).toBoolean()) {
+            throw new IllegalArgumentException("Invalid HTTP status code: " + code);
+        }
         final Maybe<HttpStatus> status = Maybe.ofNullable(VALUES.get(code));
         return status.fold(v -> new HttpStatusCode.DefaultHttpStatus(code, rfcReference, rfcSection, description),
                 Fn::identity);

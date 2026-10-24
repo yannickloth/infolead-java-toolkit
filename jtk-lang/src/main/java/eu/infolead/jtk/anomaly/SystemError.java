@@ -1,6 +1,8 @@
 package eu.infolead.jtk.anomaly;
 
+import java.lang.reflect.Array;
 import java.net.URI;
+import java.util.Objects;
 
 import eu.infolead.jtk.anomaly.http.ProblemDetail;
 import eu.infolead.jtk.fp.either.Maybe;
@@ -50,9 +52,10 @@ public sealed interface SystemError permits
     Maybe<String> getErrorId();
 
     /**
-     * Returns contextual information for error message formatting.
-     * 
-     * @return array of context arguments
+     * Returns a defensive copy of the contextual information used for error
+     * message formatting.
+     *
+     * @return a copy of the context arguments
      */
     Object[] getContextArgs();
 
@@ -121,10 +124,15 @@ public sealed interface SystemError permits
      * Converts this error to a ProblemDetail with optional instance URI.
      * 
      * @param instance optional instance URI for this specific error occurrence
-     * @return a ProblemDetail representing this error
+     * @return a ProblemDetail representing this error; its {@code detail} includes
+     *         the error ID when one is assigned
      */
-    default ProblemDetail toProblemDetail(Maybe<URI> instance) {
-        return getErrorType().toProblemDetail(Maybe.some(getMessage()), instance);
+    default ProblemDetail toProblemDetail(final Maybe<URI> instance) {
+        Objects.requireNonNull(instance, "instance");
+        final Maybe<String> detail = getErrorId().fold(
+                () -> Maybe.some(getMessage()),
+                id -> Maybe.some(getMessage() + " (error ID: " + id + ")"));
+        return getErrorType().toProblemDetail(detail, instance);
     }
 
     /**
@@ -137,27 +145,66 @@ public sealed interface SystemError permits
             case VALIDATION -> new IllegalArgumentException(format());
             case CONTRACT -> new IllegalStateException(format());
             case SECURITY -> new SecurityException(format());
-            case BUSINESS_LOGIC -> new IllegalStateException(format());
-            case RESOURCE -> new IllegalStateException(format());
-            case SYSTEM -> new RuntimeException(format());
-            default -> new RuntimeException(format());
+            case BUSINESS_LOGIC, RESOURCE -> new IllegalStateException(format());
+            case SYSTEM, EXTERNAL_SERVICE, RATE_LIMIT, CONFIGURATION -> new RuntimeException(format());
         };
     }
 
     /**
+     * Renders a value for logging without trusting its {@code toString()}
+     * implementation. The output is bounded to avoid leaking large payloads or
+     * exhausting memory.
+     *
+     * @param value the value to render
+     * @return a bounded, null-safe representation
+     */
+    static String renderValue(final Object value) {
+        return renderValue(value, 0);
+    }
+
+    private static String renderValue(final Object value, final int depth) {
+        if (value == null) {
+            return "null";
+        }
+        try {
+            if (value.getClass().isArray()) {
+                if (depth > 2) {
+                    return "...";
+                }
+                final int length = Array.getLength(value);
+                final StringBuilder rendered = new StringBuilder("[");
+                for (int index = 0; index < length && index < 16; index++) {
+                    if (index > 0) {
+                        rendered.append(", ");
+                    }
+                    rendered.append(renderValue(Array.get(value, index), depth + 1));
+                }
+                if (length > 16) {
+                    rendered.append(", ...");
+                }
+                return rendered.append(']').toString();
+            }
+            final String rendered = String.valueOf(value);
+            return rendered.length() <= 256 ? rendered : rendered.substring(0, 256) + "...";
+        } catch (final RuntimeException | StackOverflowError throwable) {
+            return "<unrenderable " + value.getClass().getName() + ">";
+        }
+    }
+
+    /**
      * Returns a formatted string representation suitable for logging or display.
-     * 
+     *
      * @return formatted error description
      */
     default String format() {
-        String baseFormat = getErrorId().fold(
+        final String baseFormat = getErrorId().fold(
             () -> String.format("[%s] %s", getErrorType().getCode(), getMessage()),
             id -> String.format("[%s|%s] %s", getErrorType().getCode(), id, getMessage())
         );
         
         return getActualValue().fold(
             () -> baseFormat,
-            value -> baseFormat + String.format(" (actual value: %s)", value)
+            value -> baseFormat + String.format(" (actual value: %s)", renderValue(value))
         );
     }
 
@@ -170,9 +217,10 @@ public sealed interface SystemError permits
 
     /**
      * Creates a new error instance with a specific error ID.
-     * 
+     *
      * @param errorId the custom error ID
      * @return a new error instance with the specified error ID
+     * @throws NullPointerException if {@code errorId} is {@code null}
      */
     SystemError withErrorId(String errorId);
 }

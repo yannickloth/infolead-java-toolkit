@@ -13,7 +13,6 @@ public enum ParameterErrorType implements ErrorType {
         "NULL_PARAMETER",
         "Parameter cannot be null",
         400,
-        "https://tools.ietf.org/html/rfc7231#section-6.5.1",
         "Bad Request - Null Parameter",
         ErrorCategory.VALIDATION
     ),
@@ -23,7 +22,6 @@ public enum ParameterErrorType implements ErrorType {
         "OUT_OF_RANGE",
         "Parameter value must be between %s and %s",
         400,
-        "https://tools.ietf.org/html/rfc7231#section-6.5.1",
         "Bad Request - Parameter Out Of Range",
         ErrorCategory.VALIDATION
     ),
@@ -33,7 +31,6 @@ public enum ParameterErrorType implements ErrorType {
         "INVALID_FORMAT",
         "Parameter has invalid format",
         400,
-        "https://tools.ietf.org/html/rfc7231#section-6.5.1",
         "Bad Request - Invalid Parameter Format",
         ErrorCategory.VALIDATION
     ),
@@ -43,7 +40,6 @@ public enum ParameterErrorType implements ErrorType {
         "TOO_LONG",
         "Parameter exceeds maximum length of %d",
         400,
-        "https://tools.ietf.org/html/rfc7231#section-6.5.1",
         "Bad Request - Parameter Too Long",
         ErrorCategory.VALIDATION
     ),
@@ -53,7 +49,6 @@ public enum ParameterErrorType implements ErrorType {
         "TOO_SHORT",
         "Parameter is shorter than minimum length of %d",
         400,
-        "https://tools.ietf.org/html/rfc7231#section-6.5.1",
         "Bad Request - Parameter Too Short",
         ErrorCategory.VALIDATION
     ),
@@ -63,7 +58,6 @@ public enum ParameterErrorType implements ErrorType {
         "EMPTY",
         "Parameter cannot be empty",
         400,
-        "https://tools.ietf.org/html/rfc7231#section-6.5.1",
         "Bad Request - Empty Parameter",
         ErrorCategory.VALIDATION
     ),
@@ -73,7 +67,6 @@ public enum ParameterErrorType implements ErrorType {
         "UNSUPPORTED_VALUE",
         "Parameter value is not supported",
         400,
-        "https://tools.ietf.org/html/rfc7231#section-6.5.1",
         "Bad Request - Unsupported Parameter Value",
         ErrorCategory.VALIDATION
     ),
@@ -83,7 +76,6 @@ public enum ParameterErrorType implements ErrorType {
         "INVALID_COMBINATION",
         "Invalid combination of parameters: %s",
         400,
-        "https://tools.ietf.org/html/rfc7231#section-6.5.1",
         "Bad Request - Invalid Parameter Combination",
         ErrorCategory.VALIDATION
     );
@@ -97,12 +89,12 @@ public enum ParameterErrorType implements ErrorType {
     private final ErrorCategory category;
 
     ParameterErrorType(int typeNumber, String code, String messageTemplate, int httpStatus,
-                      String problemType, String problemTitle, ErrorCategory category) {
+                      String problemTitle, ErrorCategory category) {
         this.typeNumber = typeNumber;
         this.code = code;
         this.messageTemplate = messageTemplate;
         this.httpStatus = httpStatus;
-        this.problemType = URI.create(problemType);
+        this.problemType = ErrorType.problemType(category, "parameter", code);
         this.problemTitle = problemTitle;
         this.category = category;
     }

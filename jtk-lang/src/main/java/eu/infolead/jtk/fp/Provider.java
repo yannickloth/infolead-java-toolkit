@@ -3,50 +3,46 @@ package eu.infolead.jtk.fp;
 import java.util.function.Supplier;
 
 import eu.infolead.jtk.lang.AliasFor;
-import eu.infolead.jtk.lang.SonarLintWarning;
 
 /**
  * A subclass of {@link Supplier}, whose sole purpose in life is to provide
  * additional useful methods.
+ *
+ * @param <U> the type of the provided value
  */
 @FunctionalInterface
 @AliasFor(type = Supplier.class)
 public interface Provider<U> extends Supplier<U> {
     /**
      * A supplier has no parameter, while a mapper does, and both return a value.
-     * This transforms a supplier
-     * into a mapper whose parameter is not used to produce the returned value -
-     * it's still the supplier that produces the returned value.
-     * 
+     * This transforms a supplier into a mapper whose parameter is ignored: the
+     * supplier still produces the returned value.
+     *
      * @param <T> the type of the mapper's input parameter (which is not used).
      * @return the produced value of type U.
      */
     default <T> Mapper<U, T> asMapper() {
-        return t -> get();
+        return ignored -> get();
     }
 
     /**
-     * 
-     * @param <T>
-     * @param value
-     * @return
+     * Creates a provider that always returns the specified value.
+     *
+     * @param <T>   the value type
+     * @param value the value to provide
+     * @return a provider of {@code value}
      */
     static <T> Provider<T> of(final T value) {
         return () -> value;
     }
 
     /**
-     * 
-     * @param <T>
-     * @param value
-     * @return
+     * Creates a provider that always returns {@code null}.
+     *
+     * @param <T> the value type
+     * @return a provider of {@code null}
      */
     static <T> Provider<T> ofNull() {
-        return Fn::toNull;
-    }
-
-    @SuppressWarnings(SonarLintWarning.JAVA_S1172)
-    static <T, U> Provider<T> ofNull(final U value) {
-        return Fn::toNull;
+        return () -> null;
     }
 }

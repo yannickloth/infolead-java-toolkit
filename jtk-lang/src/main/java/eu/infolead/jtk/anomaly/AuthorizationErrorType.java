@@ -8,13 +8,13 @@ public enum AuthorizationErrorType implements ErrorType {
 
     NOT_AUTHENTICATED(
         5001, "NOT_AUTHENTICATED", "Authentication required",
-            HttpStatus.UNAUTHORIZED.code(), "https://tools.ietf.org/html/rfc7235#section-3.1", "Unauthorized",
+            HttpStatus.UNAUTHORIZED.code(), "Unauthorized",
         ErrorCategory.SECURITY
     ),
 
     INSUFFICIENT_PERMISSIONS(
         5002, "INSUFFICIENT_PERMISSIONS", "Insufficient permissions: %s required", 
-        HttpStatus.FORBIDDEN.code(), "https://tools.ietf.org/html/rfc7231#section-6.5.3", "Forbidden",
+        HttpStatus.FORBIDDEN.code(), "Forbidden",
         ErrorCategory.SECURITY
     );
 
@@ -27,12 +27,12 @@ public enum AuthorizationErrorType implements ErrorType {
     private final ErrorCategory category;
 
     AuthorizationErrorType(int typeNumber, String code, String messageTemplate, int httpStatus,
-                          String problemType, String problemTitle, ErrorCategory category) {
+                          String problemTitle, ErrorCategory category) {
         this.typeNumber = typeNumber;
         this.code = code;
         this.messageTemplate = messageTemplate;
         this.httpStatus = httpStatus;
-        this.problemType = URI.create(problemType);
+        this.problemType = ErrorType.problemType(category, "authorization", code);
         this.problemTitle = problemTitle;
         this.category = category;
     }

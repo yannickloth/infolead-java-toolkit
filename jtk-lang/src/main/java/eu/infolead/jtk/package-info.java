@@ -24,7 +24,12 @@
  * <h3>Language Extensions ({@link eu.infolead.jtk.lang})</h3>
  * <ul>
  *   <li><strong>Annotations</strong> - {@link eu.infolead.jtk.lang.AliasFor}, compiler warnings</li>
- *   <li><strong>Boolean Logic</strong> - {@link eu.infolead.jtk.logic.Bool}, nullable booleans</li>
+ * </ul>
+ *
+ * <h3>Logic ({@link eu.infolead.jtk.logic})</h3>
+ * <ul>
+ *   <li><strong>Boolean Logic</strong> - {@link eu.infolead.jtk.logic.Bool},
+ *       {@link eu.infolead.jtk.logic.NullableBool}</li>
  * </ul>
  * 
  * <h2>Design Principles</h2>
@@ -66,21 +71,32 @@
  * <h3>Comprehensive Error IDs</h3>
  * Error types include structured IDs for tracking and monitoring:
  * <pre>{@code
+ * import eu.infolead.jtk.fp.validation.ValidationError;
+ *
  * ValidationError error = ValidationError.requiredWithId("user.email");
- * // Format: [REQUIRED|1001-1638123456789] user.email: Required field is missing
+ * // error.format() -> [REQUIRED|1001-<processToken>-N] user.email: Required field is missing or null
+ * // where <processToken> identifies the process and N is a process-local sequence number
  * }</pre>
  * 
  * <h2>Requirements for all sub-packages</h2>
  * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
  * "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
- * document are to be interpreted as described in
+ * package's documentation (including that of all sub-packages) are to be
+ * interpreted as described in
  * <a href="https://www.rfc-editor.org/rfc/rfc2119">RFC 2119</a>.
  * 
  * <h2>About serialization</h2>
  * Due to the way the Servlet API works, it is possible for web servers
- * to serialize web sessions, and all objects they reference. For this reason,
- * it is essential to ensure that APIs in this package either support serialization
- * by default or explicitly state that they don't support it.
+ * to serialize web sessions, and all objects they reference. Every type in this
+ * package MUST either implement {@link java.io.Serializable} or explicitly
+ * document that it does not support serialization.
+ * <p>
+ * All variants of the {@code Either} hierarchy (including
+ * {@link eu.infolead.jtk.fp.either.Maybe}) are serializable through
+ * {@code ValueContainer}, provided their payload is
+ * serializable. {@link eu.infolead.jtk.logic.Bool} and
+ * {@link eu.infolead.jtk.logic.NullableBool} are also serializable. The error
+ * records are not serializable.
  * 
  * @see eu.infolead.jtk.fp.either
  * @see eu.infolead.jtk.fp.validation

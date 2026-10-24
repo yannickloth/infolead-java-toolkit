@@ -8,13 +8,8 @@ import eu.infolead.jtk.logic.Bool;
 
 sealed abstract class AbstractRight<L, R> extends AbstractEither<L, R, R>
         permits Right, Maybe.Some, Validation.Valid, Result.EmptySuccess, Result.Success {
-    /**
-     * The non-serializable super class of a "Serializable" class (e.g. {@link Some}
-     * and {@link None}) should have a no-argument constructor
-     * <p>
-     * Cf. <a target="_blank" href=
-     * "https://rules.sonarsource.com/java/RSPEC-2055">https://rules.sonarsource.com/java/RSPEC-2055</a>
-     */
+    private static final long serialVersionUID = 1L;
+
     AbstractRight() {
         super();
     }
@@ -41,4 +36,5 @@ sealed abstract class AbstractRight<L, R> extends AbstractEither<L, R, R>
         rightConsumer.accept(value());
         return (E) this;
     }
+
 }
