@@ -6,6 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import eu.infolead.jtk.anomaly.http.ProblemDetail;
+import eu.infolead.jtk.anomaly.http.StandardProblemDetail;
+import eu.infolead.jtk.fp.either.Maybe;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
@@ -15,25 +18,50 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
 import org.junit.jupiter.api.Test;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import eu.infolead.jtk.anomaly.http.ProblemDetail;
-import eu.infolead.jtk.anomaly.http.StandardProblemDetail;
-import eu.infolead.jtk.fp.either.Maybe;
+import tools.jackson.databind.json.JsonMapper;
 
 class ErrorContractTest {
+
+    @Test
+    void asyncDeadlinesAreRetryableAndCancellationsAreNot() {
+        final SystemError timedOut = PostconditionError.operationTimedOut("fetchUser");
+        assertEquals(504, timedOut.getHttpStatus());
+        assertEquals(PostconditionErrorType.OPERATION_TIMED_OUT, timedOut.getErrorType());
+        assertTrue(timedOut.isRetryable());
+        assertTrue(timedOut.getMessage().contains("fetchUser"));
+
+        final SystemError cancelled =
+                PostconditionError.operationCancelled("fetchUser")
+                        .withCause(new java.util.concurrent.CancellationException("caller"));
+        assertEquals(408, cancelled.getHttpStatus());
+        assertEquals(PostconditionErrorType.OPERATION_CANCELLED, cancelled.getErrorType());
+        assertFalse(cancelled.isRetryable());
+        assertInstanceOf(
+                java.util.concurrent.CancellationException.class,
+                cancelled.toException().getCause());
+
+        final SystemError asyncFailure = PostconditionError.asyncOperationFailed("boom");
+        assertEquals(500, asyncFailure.getHttpStatus());
+        assertEquals(PostconditionErrorType.ASYNC_OPERATION_FAILED, asyncFailure.getErrorType());
+
+        assertEquals(
+                "error.external-service.postcondition.operation-timed-out",
+                PostconditionErrorType.OPERATION_TIMED_OUT.getMessageKey());
+        assertEquals(
+                "error.system.postcondition.operation-cancelled",
+                PostconditionErrorType.OPERATION_CANCELLED.getMessageKey());
+    }
 
     @Test
     void causeAndSuppressedExceptionsSurviveToException() {
         final IOException cause = new IOException("disk unavailable");
         final IllegalStateException suppressed = new IllegalStateException("retry failed");
 
-        final SystemError error = PostconditionError.expectedStateNotReached("READY", "BUSY")
-                .withCause(cause)
-                .withSuppressedException(suppressed);
+        final SystemError error =
+                PostconditionError.expectedStateNotReached("READY", "BUSY")
+                        .withCause(cause)
+                        .withSuppressedException(suppressed);
 
         final RuntimeException exception = error.toException();
         assertInstanceOf(IllegalStateException.class, exception);
@@ -46,10 +74,11 @@ class ErrorContractTest {
     void causeCanBeClearedAndSuppressedReplaced() {
         final IllegalStateException first = new IllegalStateException("first");
         final IllegalStateException second = new IllegalStateException("second");
-        final SystemError error = ResourceError.notFound("User", 1)
-                .withCause(first)
-                .withSuppressed(second)
-                .withCause(null);
+        final SystemError error =
+                ResourceError.notFound("User", 1)
+                        .withCause(first)
+                        .withSuppressed(second)
+                        .withCause(null);
 
         assertTrue(error.getCause().isEmpty().toBoolean());
         assertEquals(List.of(second), error.getSuppressed());
@@ -64,14 +93,16 @@ class ErrorContractTest {
         assertEquals(Maybe.of(Duration.ofSeconds(1)), rateLimited.retryAfter());
         assertEquals(Maybe.of("1"), rateLimited.retryAfterHeader());
 
-        final SystemError unavailable = PreconditionError.systemNotReady("maintenance")
-                .withCause(new IllegalStateException("down"));
+        final SystemError unavailable =
+                PreconditionError.systemNotReady("maintenance")
+                        .withCause(new IllegalStateException("down"));
         assertTrue(unavailable.isRetryable());
-        assertEquals(Maybe.of(Duration.ofSeconds(5)),
+        assertEquals(
+                Maybe.of(Duration.ofSeconds(5)),
                 StandardErrorType.SERVICE_UNAVAILABLE.retryAfter());
 
-        final SystemError overridden = rateLimited.withRetryAfter(Duration.ofSeconds(30))
-                .withRetryable(false);
+        final SystemError overridden =
+                rateLimited.withRetryAfter(Duration.ofSeconds(30)).withRetryable(false);
         assertEquals(Maybe.of(Duration.ofSeconds(30)), overridden.retryAfter());
         assertFalse(overridden.isRetryable());
 
@@ -82,13 +113,14 @@ class ErrorContractTest {
 
     @Test
     void contextIsPropagatedToProblemDetailExtensions() {
-        final SystemError error = ResourceError.notFound("User", 7)
-                .withGeneratedId()
-                .withCorrelationId("corr-123")
-                .withTraceId("trace-456")
-                .withRequestId("req-789")
-                .withTenantId("tenant-a")
-                .withCause(new IOException("missing"));
+        final SystemError error =
+                ResourceError.notFound("User", 7)
+                        .withGeneratedId()
+                        .withCorrelationId("corr-123")
+                        .withTraceId("trace-456")
+                        .withRequestId("req-789")
+                        .withTenantId("tenant-a")
+                        .withCause(new IOException("missing"));
 
         final ProblemDetail detail = error.toProblemDetail(Maybe.some(URI.create("/users/7")));
 
@@ -104,10 +136,11 @@ class ErrorContractTest {
 
     @Test
     void generatedIdsKeepOperationalMetadata() {
-        final SystemError error = ResourceError.notFound("User", 7)
-                .withCorrelationId("corr-123")
-                .withCause(new IOException("missing"))
-                .withGeneratedId();
+        final SystemError error =
+                ResourceError.notFound("User", 7)
+                        .withCorrelationId("corr-123")
+                        .withCause(new IOException("missing"))
+                        .withGeneratedId();
 
         assertTrue(error.getErrorId().isPresent().toBoolean());
         assertEquals("corr-123", error.getErrorContext().correlationId().orNull());
@@ -117,12 +150,13 @@ class ErrorContractTest {
 
     @Test
     void sensitiveValuesAreRedactedFromMessagesLogsAndDetails() {
-        final ParameterError error = new ParameterError(
-                "password",
-                ParameterErrorType.INVALID_COMBINATION,
-                new Object[] { Sensitive.of("hunter2") },
-                Maybe.some(Sensitive.of("hunter2")),
-                Maybe.none());
+        final ParameterError error =
+                new ParameterError(
+                        "password",
+                        ParameterErrorType.INVALID_COMBINATION,
+                        new Object[] {Sensitive.of("hunter2")},
+                        Maybe.some(Sensitive.of("hunter2")),
+                        Maybe.none());
 
         assertFalse(error.getMessage().contains("hunter2"));
         assertFalse(error.format().contains("hunter2"));
@@ -134,11 +168,11 @@ class ErrorContractTest {
 
     @Test
     void sensitiveValuesNeverReachJacksonSerialization() throws Exception {
-        final ObjectMapper mapper = new ObjectMapper();
-        assertEquals("\"[REDACTED]\"",
-                mapper.writeValueAsString(Sensitive.of("hunter2")));
+        final JsonMapper mapper = JsonMapper.builder().build();
+        assertEquals("\"[REDACTED]\"", mapper.writeValueAsString(Sensitive.of("hunter2")));
 
-        final ParameterError error = ParameterError.invalidFormat("password", Sensitive.of("hunter2"));
+        final ParameterError error =
+                ParameterError.invalidFormat("password", Sensitive.of("hunter2"));
         final String json = mapper.writeValueAsString(error);
         assertFalse(json.contains("hunter2"), json);
 
@@ -153,30 +187,33 @@ class ErrorContractTest {
         payload.put("password", "hunter2");
         payload.put("access_token", "token-abc");
 
-        final SystemError error = ParameterError.invalidFormat("payload", payload)
-                .withRedaction(RedactionPolicy.standard());
+        final SystemError error =
+                ParameterError.invalidFormat("payload", payload)
+                        .withRedaction(RedactionPolicy.standard());
 
         assertFalse(error.format().contains("hunter2"));
         assertFalse(error.format().contains("token-abc"));
         assertTrue(error.format().contains(Sensitive.REDACTED));
         assertFalse(error.getActualValue().orNull().toString().contains("hunter2"));
 
-        final SystemError withContext = new ParameterError(
-                "payload",
-                ParameterErrorType.INVALID_COMBINATION,
-                new Object[] { payload },
-                Maybe.none(),
-                Maybe.none())
-                .withRedaction(RedactionPolicy.standard());
+        final SystemError withContext =
+                new ParameterError(
+                                "payload",
+                                ParameterErrorType.INVALID_COMBINATION,
+                                new Object[] {payload},
+                                Maybe.none(),
+                                Maybe.none())
+                        .withRedaction(RedactionPolicy.standard());
         assertFalse(withContext.getMessage().contains("hunter2"));
         assertFalse(withContext.getMessage().contains("token-abc"));
 
-        final ParameterError plainContext = new ParameterError(
-                "payload",
-                ParameterErrorType.INVALID_COMBINATION,
-                new Object[] { payload },
-                Maybe.none(),
-                Maybe.none());
+        final ParameterError plainContext =
+                new ParameterError(
+                        "payload",
+                        ParameterErrorType.INVALID_COMBINATION,
+                        new Object[] {payload},
+                        Maybe.none(),
+                        Maybe.none());
         assertFalse(plainContext.getMessage().contains("hunter2"));
         assertFalse(plainContext.getMessage().contains("token-abc"));
     }
@@ -185,19 +222,19 @@ class ErrorContractTest {
     void acceptLanguageResolvesLocalizedTitlesAndMessages() {
         final SystemError error = ParameterError.nullParameter("userId");
 
-        final ProblemDetail french = error.toProblemDetail(
-                Maybe.none(),
-                ErrorLocalizer.acceptLanguage("fr-FR,fr;q=0.9,en;q=0.4"));
+        final ProblemDetail french =
+                error.toProblemDetail(
+                        Maybe.none(), ErrorLocalizer.acceptLanguage("fr-FR,fr;q=0.9,en;q=0.4"));
         assertEquals("Paramètre nul", french.getTitle());
         assertTrue(french.getDetail().startsWith("userId:"));
         assertFalse(french.getDetail().contains("cannot be null"));
 
-        final ProblemDetail german = error.toProblemDetail(
-                Maybe.none(), ErrorLocalizer.acceptLanguage("de"));
+        final ProblemDetail german =
+                error.toProblemDetail(Maybe.none(), ErrorLocalizer.acceptLanguage("de"));
         assertEquals("Nullparameter", german.getTitle());
 
-        final ProblemDetail english = error.toProblemDetail(
-                Maybe.none(), ErrorLocalizer.acceptLanguage("en-GB"));
+        final ProblemDetail english =
+                error.toProblemDetail(Maybe.none(), ErrorLocalizer.acceptLanguage("en-GB"));
         assertEquals("Bad Request - Null Parameter", english.getTitle());
     }
 
@@ -208,49 +245,61 @@ class ErrorContractTest {
         assertEquals(Locale.ENGLISH, ErrorLocalizer.preferredLocale("zh-CN"));
         assertEquals(Locale.ENGLISH, ErrorLocalizer.preferredLocale("not a locale ;;"));
         assertEquals(Locale.FRENCH, ErrorLocalizer.preferredLocale("fr-CA"));
-        assertEquals(Locale.ENGLISH,
-                ErrorLocalizer.preferredLocale("fr;q=0, en;q=0.5"));
+        assertEquals(Locale.ENGLISH, ErrorLocalizer.preferredLocale("fr;q=0, en;q=0.5"));
     }
 
     @Test
     void aboutBlankTitlesUseLocalizedHttpReasonPhrases() {
-        final StandardProblemDetail aboutBlank = StandardProblemDetail.aboutBlank(404, Locale.FRENCH);
+        final StandardProblemDetail aboutBlank =
+                StandardProblemDetail.aboutBlank(404, Locale.FRENCH);
         assertEquals("Introuvable", aboutBlank.getTitle());
 
-        final ProblemDetail localized = StandardProblemDetail.aboutBlank("Not Found", 404)
-                .withExtensions(Maybe.some("corr"), Maybe.none(), Maybe.none(),
-                        Maybe.none(), true, Maybe.of(2L))
-                .localized(Locale.GERMAN);
+        final ProblemDetail localized =
+                StandardProblemDetail.aboutBlank("Not Found", 404)
+                        .withExtensions(
+                                Maybe.some("corr"),
+                                Maybe.none(),
+                                Maybe.none(),
+                                Maybe.none(),
+                                true,
+                                Maybe.of(2L))
+                        .localized(Locale.GERMAN);
         assertEquals("Nicht gefunden", localized.getTitle());
         assertEquals("corr", localized.getCorrelationId().orNull());
         assertEquals(2L, localized.getRetryAfterSeconds().orNull());
         assertTrue(localized.getRetryable().orNull());
 
-        final ProblemDetail typed = StandardErrorType.REQUIRED.toProblemDetail(
-                Maybe.none(), Maybe.none(), ErrorLocalizer.of(Locale.FRENCH));
+        final ProblemDetail typed =
+                StandardErrorType.REQUIRED.toProblemDetail(
+                        Maybe.none(), Maybe.none(), ErrorLocalizer.of(Locale.FRENCH));
         assertEquals("Champ obligatoire manquant", typed.getTitle());
     }
 
     @Test
     void messageKeysAreStableAndNamespaceAware() {
-        assertEquals("error.validation.standard.required",
-                StandardErrorType.REQUIRED.getMessageKey());
-        assertEquals("error.validation.parameter.null-parameter",
+        assertEquals(
+                "error.validation.standard.required", StandardErrorType.REQUIRED.getMessageKey());
+        assertEquals(
+                "error.validation.parameter.null-parameter",
                 ParameterErrorType.NULL_PARAMETER.getMessageKey());
-        assertTrue(StandardErrorType.REQUIRED.getMessageKey()
-                .equals(StandardErrorType.REQUIRED.getMessageKey()));
+        assertTrue(
+                StandardErrorType.REQUIRED
+                        .getMessageKey()
+                        .equals(StandardErrorType.REQUIRED.getMessageKey()));
     }
 
     @Test
     void transientPostconditionFailuresAreRetryableButContractFailuresAreNot() {
-        assertEquals(ErrorType.ErrorSeverity.ERROR,
+        assertEquals(
+                ErrorType.ErrorSeverity.ERROR,
                 PostconditionErrorType.PERSISTENCE_FAILED.getSeverity());
         assertTrue(PostconditionErrorType.PERSISTENCE_FAILED.isRetryable());
         assertTrue(PostconditionErrorType.INTEGRATION_FAILED.isRetryable());
         assertTrue(PostconditionErrorType.SIDE_EFFECT_FAILED.isRetryable());
         assertTrue(PostconditionErrorType.ASYNC_OPERATION_FAILED.isRetryable());
 
-        assertEquals(ErrorType.ErrorSeverity.CRITICAL,
+        assertEquals(
+                ErrorType.ErrorSeverity.CRITICAL,
                 PostconditionErrorType.INVARIANT_VIOLATED.getSeverity());
         assertFalse(PostconditionErrorType.INVARIANT_VIOLATED.isRetryable());
         assertFalse(PostconditionErrorType.EXPECTED_STATE_NOT_REACHED.isRetryable());
@@ -259,48 +308,55 @@ class ErrorContractTest {
 
     @Test
     void englishResolutionKeepsTheDeclaredTitle() {
-        assertEquals(StandardErrorType.REQUIRED.getProblemTitle(),
+        assertEquals(
+                StandardErrorType.REQUIRED.getProblemTitle(),
                 StandardErrorType.REQUIRED.toProblemDetail().getTitle());
-        assertEquals(StandardErrorType.REQUIRED.getProblemTitle(),
-                StandardErrorType.REQUIRED.toProblemDetail(
-                        Maybe.none(), Maybe.none(), ErrorLocalizer.english()).getTitle());
-        assertEquals(InvariantErrorType.OBJECT_CONSISTENCY.getProblemTitle(),
+        assertEquals(
+                StandardErrorType.REQUIRED.getProblemTitle(),
+                StandardErrorType.REQUIRED
+                        .toProblemDetail(Maybe.none(), Maybe.none(), ErrorLocalizer.english())
+                        .getTitle());
+        assertEquals(
+                InvariantErrorType.OBJECT_CONSISTENCY.getProblemTitle(),
                 ErrorLocalizer.of(Locale.ENGLISH).title(InvariantErrorType.OBJECT_CONSISTENCY));
     }
 
     @Test
     void dataCorruptionTranslationsUseTheSystemNamespace() {
-        assertEquals("error.system.invariant.data-corruption",
+        assertEquals(
+                "error.system.invariant.data-corruption",
                 InvariantErrorType.DATA_CORRUPTION.getMessageKey());
-        assertEquals("Datenbeschädigung",
+        assertEquals(
+                "Datenbeschädigung",
                 ErrorLocalizer.of(Locale.GERMAN).title(InvariantErrorType.DATA_CORRUPTION));
-        assertEquals("Corruption de données",
+        assertEquals(
+                "Corruption de données",
                 ErrorLocalizer.of(Locale.FRENCH).title(InvariantErrorType.DATA_CORRUPTION));
     }
 
     @Test
     void localizedDetailsTranslateTheErrorIdSuffix() {
-        final ProblemDetail french = ParameterError.nullParameter("userId")
-                .withGeneratedId()
-                .toProblemDetail(Maybe.none(), ErrorLocalizer.of(Locale.FRENCH));
+        final ProblemDetail french =
+                ParameterError.nullParameter("userId")
+                        .withGeneratedId()
+                        .toProblemDetail(Maybe.none(), ErrorLocalizer.of(Locale.FRENCH));
         assertTrue(french.getDetail().contains("(ID d'erreur : "), french.getDetail());
 
-        final ProblemDetail german = ParameterError.nullParameter("userId")
-                .withGeneratedId()
-                .toProblemDetail(Maybe.none(), ErrorLocalizer.of(Locale.GERMAN));
+        final ProblemDetail german =
+                ParameterError.nullParameter("userId")
+                        .withGeneratedId()
+                        .toProblemDetail(Maybe.none(), ErrorLocalizer.of(Locale.GERMAN));
         assertTrue(german.getDetail().contains("(Fehler-ID: "), german.getDetail());
 
-        final ProblemDetail english = ParameterError.nullParameter("userId")
-                .withGeneratedId()
-                .toProblemDetail();
+        final ProblemDetail english =
+                ParameterError.nullParameter("userId").withGeneratedId().toProblemDetail();
         assertTrue(english.getDetail().contains("(error ID: "), english.getDetail());
     }
 
     @Test
     void unknownStatusCodesKeepTheDeclaredTitleWhenLocalizing() {
-        final ProblemDetail localized = StandardProblemDetail
-                .aboutBlank("Upstream gave up", 599)
-                .localized(Locale.FRENCH);
+        final ProblemDetail localized =
+                StandardProblemDetail.aboutBlank("Upstream gave up", 599).localized(Locale.FRENCH);
         assertEquals("Upstream gave up", localized.getTitle());
     }
 
@@ -328,8 +384,8 @@ class ErrorContractTest {
 
     @Test
     void retryabilityIsNotPartOfTheRecordJsonContract() throws Exception {
-        final String json = new ObjectMapper()
-                .writeValueAsString(ParameterError.nullParameter("id"));
+        final String json =
+                JsonMapper.builder().build().writeValueAsString(ParameterError.nullParameter("id"));
         assertFalse(json.contains("\"retryable\""), json);
         assertFalse(json.contains("\"retryAfter\""), json);
     }
@@ -338,21 +394,24 @@ class ErrorContractTest {
     void localizerWithoutTranslationFallsBackToDeclaredEnglish() {
         final ErrorLocalizer localizer = ErrorLocalizer.of(Locale.FRENCH);
         // Postcondition translations are intentionally not bundled.
-        assertEquals(PostconditionErrorType.PERSISTENCE_FAILED.getProblemTitle(),
+        assertEquals(
+                PostconditionErrorType.PERSISTENCE_FAILED.getProblemTitle(),
                 localizer.title(PostconditionErrorType.PERSISTENCE_FAILED));
-        assertEquals(PostconditionErrorType.PERSISTENCE_FAILED.getMessageTemplate(),
+        assertEquals(
+                PostconditionErrorType.PERSISTENCE_FAILED.getMessageTemplate(),
                 localizer.messageTemplate(PostconditionErrorType.PERSISTENCE_FAILED));
     }
 
     @Test
     void zeroArgumentErrorsDoNotRenderRawFormatPlaceholders() {
-        final AuthorizationError authorization = new AuthorizationError(
-                "admin role", AuthorizationErrorType.INSUFFICIENT_PERMISSIONS);
+        final AuthorizationError authorization =
+                new AuthorizationError(
+                        "admin role", AuthorizationErrorType.INSUFFICIENT_PERMISSIONS);
         assertFalse(authorization.getMessage().contains("%s"));
         assertFalse(authorization.getLocalizedMessage(Locale.GERMAN).contains("%s"));
 
-        final BusinessRuleError businessRule = new BusinessRuleError(
-                "Currency mismatch", BusinessRuleErrorType.CURRENCY_MISMATCH);
+        final BusinessRuleError businessRule =
+                new BusinessRuleError("Currency mismatch", BusinessRuleErrorType.CURRENCY_MISMATCH);
         assertFalse(businessRule.getMessage().contains("%s"));
         assertFalse(businessRule.getLocalizedMessage(Locale.FRENCH).contains("%s"));
     }
@@ -366,8 +425,9 @@ class ErrorContractTest {
         payload.put("pin", "1234");
         payload.put("shipping", "standard");
 
-        final SystemError error = ParameterError.invalidFormat("payload", payload)
-                .withRedaction(RedactionPolicy.standard());
+        final SystemError error =
+                ParameterError.invalidFormat("payload", payload)
+                        .withRedaction(RedactionPolicy.standard());
         final String rendered = error.format();
 
         assertFalse(rendered.contains("secret-one"));
@@ -387,7 +447,7 @@ class ErrorContractTest {
         final Set<String> set = new LinkedHashSet<>(List.of("a", "b"));
         assertInstanceOf(Set.class, RedactionPolicy.sensitive().redact(set));
 
-        final String[] array = { "a", "b" };
+        final String[] array = {"a", "b"};
         assertInstanceOf(String[].class, RedactionPolicy.sensitive().redact(array));
     }
 
@@ -417,9 +477,15 @@ class ErrorContractTest {
 
     @Test
     void extensionRetryabilityCanRemainUnknown() {
-        final StandardProblemDetail detail = StandardProblemDetail.aboutBlank("Not Found", 404)
-                .withExtensions(Maybe.none(), Maybe.none(), Maybe.none(), Maybe.none(),
-                        Maybe.none(), Maybe.none());
+        final StandardProblemDetail detail =
+                StandardProblemDetail.aboutBlank("Not Found", 404)
+                        .withExtensions(
+                                Maybe.none(),
+                                Maybe.none(),
+                                Maybe.none(),
+                                Maybe.none(),
+                                Maybe.none(),
+                                Maybe.none());
         assertTrue(detail.getRetryable().isEmpty().toBoolean());
     }
 }

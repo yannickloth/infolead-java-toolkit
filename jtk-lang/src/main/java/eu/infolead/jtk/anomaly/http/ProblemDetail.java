@@ -1,23 +1,22 @@
 package eu.infolead.jtk.anomaly.http;
 
-import java.net.URI;
-import java.util.Locale;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import eu.infolead.jtk.fp.either.Maybe;
 import eu.infolead.jtk.http.HttpStatusCode;
+import java.net.URI;
+import java.util.Locale;
 
 /**
- * This interface represents the common error format defined by
- * <a href="https://www.rfc-editor.org/rfc/rfc7807">RFC 7807</a>.
- * 
+ * This interface represents the common error format defined by <a
+ * href="https://www.rfc-editor.org/rfc/rfc7807">RFC 7807</a>.
+ *
  * <h2>References</h2>
+ *
  * <ul>
- * <li><a href="https://www.rfc-editor.org/rfc/rfc7807">RFC 7807</a>
+ *   <li><a href="https://www.rfc-editor.org/rfc/rfc7807">RFC 7807</a>
  * </ul>
  *
  * <h2>Example</h2>
@@ -35,153 +34,127 @@ import eu.infolead.jtk.http.HttpStatusCode;
  *         .build();
  * }</pre>
  *
- * <p>The correlation identifiers, retryability and retry delay are RFC 7807
- * extension members. They are omitted from JSON when absent.</p>
+ * <p>The correlation identifiers, retryability and retry delay are RFC 7807 extension members. They
+ * are omitted from JSON when absent.
  */
 public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatusProblemDetail {
 
     /**
-     * A URI reference [RFC3986] that identifies the
-     * problem type.
-     * 
-     * <p>
-     * <a href="https://www.rfc-editor.org/rfc/rfc7807">RFC 7807</a> encourages
-     * that, when
-     * dereferenced, it provide human-readable documentation for the
-     * problem type (e.g., using HTML [W3C.REC-html5-20141028]). When
-     * this member is not present, its value is assumed to be
+     * A URI reference [RFC3986] that identifies the problem type.
+     *
+     * <p><a href="https://www.rfc-editor.org/rfc/rfc7807">RFC 7807</a> encourages that, when
+     * dereferenced, it provide human-readable documentation for the problem type (e.g., using HTML
+     * [W3C.REC-html5-20141028]). When this member is not present, its value is assumed to be
      * "about:blank".
-     * <p>
-     * Consumers MUST use the "type" string as the primary identifier for
-     * the problem type; the "title" string is advisory and included only
-     * for users who are not aware of the semantics of the URI and do not
-     * have the ability to discover them (e.g., offline log analysis).
-     * <p>
-     * Consumers SHOULD NOT automatically dereference the type URI.
-     * <p>
-     * This member accepts relative URIs; this means
-     * that they must be resolved relative to the document's base URI, as
-     * per <a href="https://www.rfc-editor.org/rfc/rfc3986#section-5">RFC 3986,
-     * Section 5</a>.
-     * <p>
-     * Changing the type is a breaking API change by definition. A consumer may thus
-     * reliably
+     *
+     * <p>Consumers MUST use the "type" string as the primary identifier for the problem type; the
+     * "title" string is advisory and included only for users who are not aware of the semantics of
+     * the URI and do not have the ability to discover them (e.g., offline log analysis).
+     *
+     * <p>Consumers SHOULD NOT automatically dereference the type URI.
+     *
+     * <p>This member accepts relative URIs; this means that they must be resolved relative to the
+     * document's base URI, as per <a href="https://www.rfc-editor.org/rfc/rfc3986#section-5">RFC
+     * 3986, Section 5</a>.
+     *
+     * <p>Changing the type is a breaking API change by definition. A consumer may thus reliably
      * distinguish different problem types from each other using this member.
-     * 
+     *
      * <h4>Predefined Problem Types</h4>
-     * The {@code about:blank} URI
-     * <a href="https://www.rfc-editor.org/rfc/rfc6694">RFC
-     * 6694</a>, when used as a problem type,
-     * indicates that the problem has no additional semantics beyond that of
-     * the HTTP status code.
-     * 
-     * When {@code about:blank} is used, the title SHOULD be the same as the
-     * recommended HTTP status phrase for that code (e.g., {@code Not Found} for
-     * {@code 404}, and so on), although it MAY be localized to suit client
-     * preferences (expressed with the Accept-Language request header).
-     * <p>
-     * This implementation resolves the status phrase through
-     * {@link #getLocalizedTitle(Locale)} and {@link #localized(Locale)}, which
-     * use the localized HTTP reason phrases supplied by
-     * {@link HttpStatusMessages}. Error conversion through
-     * {@code SystemError.toProblemDetail(..., ErrorLocalizer)} applies the
-     * client's preference automatically.
-     * 
+     *
+     * The {@code about:blank} URI <a href="https://www.rfc-editor.org/rfc/rfc6694">RFC 6694</a>,
+     * when used as a problem type, indicates that the problem has no additional semantics beyond
+     * that of the HTTP status code.
+     *
+     * <p>When {@code about:blank} is used, the title SHOULD be the same as the recommended HTTP
+     * status phrase for that code (e.g., {@code Not Found} for {@code 404}, and so on), although it
+     * MAY be localized to suit client preferences (expressed with the Accept-Language request
+     * header).
+     *
+     * <p>This implementation resolves the status phrase through {@link #getLocalizedTitle(Locale)}
+     * and {@link #localized(Locale)}, which use the localized HTTP reason phrases supplied by
+     * {@link HttpStatusMessages}. Error conversion through {@code SystemError.toProblemDetail(...,
+     * ErrorLocalizer)} applies the client's preference automatically.
+     *
      * @return the problem type URI. Never null.
      */
     @JsonProperty("type")
     URI getProblemType();
 
     /**
-     * A short, human-readable summary of the problem
-     * type.
-     * <p>
-     * It SHOULD NOT change from occurrence to occurrence of the
-     * problem, except for purposes of localization.
-     * <p>
-     * The "title" string is advisory and included only
-     * for users who are not aware of the semantics of the URI and do not
-     * have the ability to discover them (e.g., offline log analysis).
-     * <p>
-     * Consumers SHOULD NOT automatically dereference the type URI.
-     * <p>
-     * This can be changed without breaking the API.
-     * 
+     * A short, human-readable summary of the problem type.
+     *
+     * <p>It SHOULD NOT change from occurrence to occurrence of the problem, except for purposes of
+     * localization.
+     *
+     * <p>The "title" string is advisory and included only for users who are not aware of the
+     * semantics of the URI and do not have the ability to discover them (e.g., offline log
+     * analysis).
+     *
+     * <p>Consumers SHOULD NOT automatically dereference the type URI.
+     *
+     * <p>This can be changed without breaking the API.
+     *
      * @return a {@link Maybe} with the title
      */
     @JsonIgnore
     Maybe<String> getProblemTypeTitle();
 
     /**
-     * The HTTP status code
-     * (<a href="https://www.rfc-editor.org/rfc/rfc7231#section-6">RFC7231,
-     * Section 6</a>)
-     * generated by the origin server for this occurrence of the problem.
-     * <p>
-     * 
-     * The "status" member, if present, is only advisory; it conveys the
-     * HTTP status code used for the convenience of the consumer.
-     * <p>
-     * Generators MUST use the same status code in the actual HTTP response,
-     * to assure that generic HTTP software that does not understand this
-     * format (the whole problem detail structure) still behaves correctly. See
-     * <a href="https://www.rfc-editor.org/rfc/rfc7807#section-5">RFC 7807, Section
-     * 5</a> for further caveats
-     * regarding its use.
-     * <p>
-     * <em>TODO: </em>
-     * Implement a request filter that checks in outgoing responses
-     * if both status codes from this structure and from HTTP headers are equal, and
-     * log if not.
-     * <p>
-     * Consumers can use the status member to determine what the original
-     * status code used by the generator was, in cases where it has been
-     * changed (e.g., by an intermediary or cache), and when message bodies
-     * persist without HTTP information. Generic HTTP software will still
-     * use the HTTP status code conveyed in the HTTP headers instead of this one.
-     * <p>
-     * This HTTP status is only advisory, as it may differ from the actual HTTP
-     * status code from the HTTP headers. Therefore, this can be changed without
-     * breaking the
-     * API.
-     * 
+     * The HTTP status code (<a href="https://www.rfc-editor.org/rfc/rfc7231#section-6">RFC7231,
+     * Section 6</a>) generated by the origin server for this occurrence of the problem.
+     *
+     * <p>The "status" member, if present, is only advisory; it conveys the HTTP status code used
+     * for the convenience of the consumer.
+     *
+     * <p>Generators MUST use the same status code in the actual HTTP response, to assure that
+     * generic HTTP software that does not understand this format (the whole problem detail
+     * structure) still behaves correctly. See <a
+     * href="https://www.rfc-editor.org/rfc/rfc7807#section-5">RFC 7807, Section 5</a> for further
+     * caveats regarding its use.
+     *
+     * <p><em>TODO: </em> Implement a request filter that checks in outgoing responses if both
+     * status codes from this structure and from HTTP headers are equal, and log if not.
+     *
+     * <p>Consumers can use the status member to determine what the original status code used by the
+     * generator was, in cases where it has been changed (e.g., by an intermediary or cache), and
+     * when message bodies persist without HTTP information. Generic HTTP software will still use
+     * the HTTP status code conveyed in the HTTP headers instead of this one.
+     *
+     * <p>This HTTP status is only advisory, as it may differ from the actual HTTP status code from
+     * the HTTP headers. Therefore, this can be changed without breaking the API.
+     *
      * @return a {@link Maybe} with the status
      */
     @JsonIgnore
     Maybe<Integer> getHttpStatus();
 
     /**
-     * A human-readable explanation specific to this
-     * occurrence of the problem.
-     * 
-     * <p>
-     * The "detail" member, if present, ought to focus on helping the client
-     * correct the problem, rather than giving debugging information.
-     * <p>
-     * Consumers SHOULD NOT parse the "detail" member for information;
-     * extensions of this interface are more suitable and less error-prone ways to
-     * obtain such information.
-     * <p>
-     * This can be changed without breaking the API.
-     * 
+     * A human-readable explanation specific to this occurrence of the problem.
+     *
+     * <p>The "detail" member, if present, ought to focus on helping the client correct the problem,
+     * rather than giving debugging information.
+     *
+     * <p>Consumers SHOULD NOT parse the "detail" member for information; extensions of this
+     * interface are more suitable and less error-prone ways to obtain such information.
+     *
+     * <p>This can be changed without breaking the API.
+     *
      * @return a {@link Maybe} with the detail.
      */
     @JsonIgnore
     Maybe<String> getFullDetail();
 
     /**
-     * A URI reference that identifies the specific
-     * occurrence of the problem. It may or may not yield further
-     * information if dereferenced.
-     * 
-     * <p>
-     * This member accepts relative URIs; this means
-     * that they must be resolved relative to the document's base URI, as
-     * per <a href="https://www.rfc-editor.org/rfc/rfc3986#section-5">RFC 3986,
-     * Section 5</a>.
-     * <p>
-     * This can be changed without breaking the API.
-     * 
+     * A URI reference that identifies the specific occurrence of the problem. It may or may not
+     * yield further information if dereferenced.
+     *
+     * <p>This member accepts relative URIs; this means that they must be resolved relative to the
+     * document's base URI, as per <a href="https://www.rfc-editor.org/rfc/rfc3986#section-5">RFC
+     * 3986, Section 5</a>.
+     *
+     * <p>This can be changed without breaking the API.
+     *
      * @return a {@link Maybe} with the instance URI
      */
     @JsonIgnore
@@ -190,9 +163,9 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
     /**
      * Returns the cross-system correlation identifier for this occurrence.
      *
-     * <p>The value is supplied by the surrounding infrastructure (for example
-     * an HTTP gateway) and is serialized as the RFC 7807 {@code correlationId}
-     * extension member. {@link Maybe#none()} means "unknown".</p>
+     * <p>The value is supplied by the surrounding infrastructure (for example an HTTP gateway) and
+     * is serialized as the RFC 7807 {@code correlationId} extension member. {@link Maybe#none()}
+     * means "unknown".
      *
      * <pre>{@code
      * problem.getCorrelationId().orElse("unknown");
@@ -200,7 +173,7 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
      *
      * @return the correlation identifier, or {@link Maybe#none()}
      */
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     default Maybe<String> getCorrelationId() {
         return Maybe.none();
     }
@@ -208,9 +181,8 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
     /**
      * Returns the distributed-tracing identifier for this occurrence.
      *
-     * <p>Serialized as the {@code traceId} extension member so a problem
-     * response can be joined with distributed traces. {@link Maybe#none()}
-     * means the value was not captured.</p>
+     * <p>Serialized as the {@code traceId} extension member so a problem response can be joined
+     * with distributed traces. {@link Maybe#none()} means the value was not captured.
      *
      * <pre>{@code
      * problem.getTraceId().orNull(); // e.g. "4bf92f3577b34da6a3ce929d0e0e4736"
@@ -218,7 +190,7 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
      *
      * @return the trace identifier, or {@link Maybe#none()}
      */
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     default Maybe<String> getTraceId() {
         return Maybe.none();
     }
@@ -226,8 +198,8 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
     /**
      * Returns the request identifier for this occurrence.
      *
-     * <p>Serialized as the {@code requestId} extension member; useful for
-     * correlating a client report with server logs.</p>
+     * <p>Serialized as the {@code requestId} extension member; useful for correlating a client
+     * report with server logs.
      *
      * <pre>{@code
      * problem.getRequestId().orNull(); // e.g. "req-789"
@@ -235,7 +207,7 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
      *
      * @return the request identifier, or {@link Maybe#none()}
      */
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     default Maybe<String> getRequestId() {
         return Maybe.none();
     }
@@ -243,8 +215,8 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
     /**
      * Returns the tenant identifier for this occurrence.
      *
-     * <p>Serialized as the {@code tenantId} extension member so multi-tenant
-     * operators can route a problem report to the owning tenant.</p>
+     * <p>Serialized as the {@code tenantId} extension member so multi-tenant operators can route a
+     * problem report to the owning tenant.
      *
      * <pre>{@code
      * problem.getTenantId().orNull(); // e.g. "tenant-a"
@@ -252,7 +224,7 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
      *
      * @return the tenant identifier, or {@link Maybe#none()}
      */
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     default Maybe<String> getTenantId() {
         return Maybe.none();
     }
@@ -260,9 +232,8 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
     /**
      * Indicates whether the failed operation may succeed if retried.
      *
-     * <p>Serialized as the {@code retryable} extension member. Clients should
-     * treat {@link Maybe#none()} as "no hint available" and use the HTTP
-     * status class instead.</p>
+     * <p>Serialized as the {@code retryable} extension member. Clients should treat {@link
+     * Maybe#none()} as "no hint available" and use the HTTP status class instead.
      *
      * <pre>{@code
      * if (problem.getRetryable().orElse(Boolean.FALSE)) {
@@ -272,7 +243,7 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
      *
      * @return the retryability hint, or {@link Maybe#none()} when unknown
      */
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     default Maybe<Boolean> getRetryable() {
         return Maybe.none();
     }
@@ -280,9 +251,8 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
     /**
      * Returns the recommended retry delay in seconds.
      *
-     * <p>Serialized as the {@code retryAfter} extension member, using the
-     * RFC 7807 delta-seconds convention (the same unit as the HTTP
-     * {@code Retry-After} header).</p>
+     * <p>Serialized as the {@code retryAfter} extension member, using the RFC 7807 delta-seconds
+     * convention (the same unit as the HTTP {@code Retry-After} header).
      *
      * <pre>{@code
      * problem.getRetryAfterSeconds().orElse(30L); // e.g. 1L for HTTP 429
@@ -290,17 +260,16 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
      *
      * @return the delay in seconds, or {@link Maybe#none()}
      */
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     default Maybe<Long> getRetryAfterSeconds() {
         return Maybe.none();
     }
 
     /**
-     * Returns the correlation identifier as a nullable value suitable for
-     * JSON serialization.
+     * Returns the correlation identifier as a nullable value suitable for JSON serialization.
      *
-     * <p>Jackson wire accessor for the {@code correlationId} extension member;
-     * use {@link #getCorrelationId()} in application code.</p>
+     * <p>Jackson wire accessor for the {@code correlationId} extension member; use {@link
+     * #getCorrelationId()} in application code.
      *
      * @return the identifier, or {@code null}
      */
@@ -311,11 +280,10 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
     }
 
     /**
-     * Returns the trace identifier as a nullable value suitable for JSON
-     * serialization.
+     * Returns the trace identifier as a nullable value suitable for JSON serialization.
      *
-     * <p>Jackson wire accessor for the {@code traceId} extension member; use
-     * {@link #getTraceId()} in application code.</p>
+     * <p>Jackson wire accessor for the {@code traceId} extension member; use {@link #getTraceId()}
+     * in application code.
      *
      * @return the identifier, or {@code null}
      */
@@ -326,11 +294,10 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
     }
 
     /**
-     * Returns the request identifier as a nullable value suitable for JSON
-     * serialization.
+     * Returns the request identifier as a nullable value suitable for JSON serialization.
      *
-     * <p>Jackson wire accessor for the {@code requestId} extension member; use
-     * {@link #getRequestId()} in application code.</p>
+     * <p>Jackson wire accessor for the {@code requestId} extension member; use {@link
+     * #getRequestId()} in application code.
      *
      * @return the identifier, or {@code null}
      */
@@ -341,11 +308,10 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
     }
 
     /**
-     * Returns the tenant identifier as a nullable value suitable for JSON
-     * serialization.
+     * Returns the tenant identifier as a nullable value suitable for JSON serialization.
      *
-     * <p>Jackson wire accessor for the {@code tenantId} extension member; use
-     * {@link #getTenantId()} in application code.</p>
+     * <p>Jackson wire accessor for the {@code tenantId} extension member; use {@link
+     * #getTenantId()} in application code.
      *
      * @return the identifier, or {@code null}
      */
@@ -356,11 +322,10 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
     }
 
     /**
-     * Returns the retryability hint as a nullable value suitable for JSON
-     * serialization.
+     * Returns the retryability hint as a nullable value suitable for JSON serialization.
      *
-     * <p>Jackson wire accessor for the {@code retryable} extension member; use
-     * {@link #getRetryable()} in application code.</p>
+     * <p>Jackson wire accessor for the {@code retryable} extension member; use {@link
+     * #getRetryable()} in application code.
      *
      * @return the hint, or {@code null}
      */
@@ -371,11 +336,10 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
     }
 
     /**
-     * Returns the recommended retry delay as a nullable value suitable for
-     * JSON serialization.
+     * Returns the recommended retry delay as a nullable value suitable for JSON serialization.
      *
-     * <p>Jackson wire accessor for the {@code retryAfter} extension member; use
-     * {@link #getRetryAfterSeconds()} in application code.</p>
+     * <p>Jackson wire accessor for the {@code retryAfter} extension member; use {@link
+     * #getRetryAfterSeconds()} in application code.
      *
      * @return the delay in seconds, or {@code null}
      */
@@ -388,14 +352,13 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
     /**
      * Returns the problem title as the programmatic API value.
      *
-     * <p>This accessor is {@link JsonIgnore ignored by Jackson}: the wire
-     * member is written by {@link #getProblemTypeTitleValue()}. Use this
-     * method in application code, and the {@code *Value} accessor when a
-     * nullable JSON-shaped value is required.</p>
+     * <p>This accessor is {@link JsonIgnore ignored by Jackson}: the wire member is written by
+     * {@link #getProblemTypeTitleValue()}. Use this method in application code, and the {@code
+     * *Value} accessor when a nullable JSON-shaped value is required.
      *
      * @return the title, or {@code null}
      */
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     default String getTitle() {
         return getProblemTypeTitle().orNull();
     }
@@ -403,9 +366,9 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
     /**
      * Returns the problem title under the RFC 7807 {@code title} JSON member.
      *
-     * <p>{@link #getTitle()} stays the programmatic API. Jackson 2.22 discards
-     * bean getters whose bean name collides with a record creator parameter,
-     * so serialization exposes the title through this renamed accessor.</p>
+     * <p>{@link #getTitle()} stays the programmatic API. Jackson 2.22 discards bean getters whose
+     * bean name collides with a record creator parameter, so serialization exposes the title
+     * through this renamed accessor.
      *
      * @return the title, or {@code null}
      */
@@ -416,8 +379,7 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
     }
 
     /**
-     * Returns the HTTP status as a nullable value suitable for JSON
-     * serialization.
+     * Returns the HTTP status as a nullable value suitable for JSON serialization.
      *
      * @return the status, or {@code null}
      */
@@ -430,12 +392,12 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
     /**
      * Returns the detail as the programmatic API value.
      *
-     * <p>This accessor is {@link JsonIgnore ignored by Jackson}: the wire
-     * member is written by {@link #getFullDetailValue()}.</p>
+     * <p>This accessor is {@link JsonIgnore ignored by Jackson}: the wire member is written by
+     * {@link #getFullDetailValue()}.
      *
      * @return the detail, or {@code null}
      */
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     default String getDetail() {
         return getFullDetail().orNull();
     }
@@ -443,8 +405,7 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
     /**
      * Returns the detail under the RFC 7807 {@code detail} JSON member.
      *
-     * <p>See {@link #getProblemTypeTitleValue()} for why serialization uses a
-     * renamed accessor.</p>
+     * <p>See {@link #getProblemTypeTitleValue()} for why serialization uses a renamed accessor.
      *
      * @return the detail, or {@code null}
      */
@@ -457,22 +418,20 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
     /**
      * Returns the instance URI as the programmatic API value.
      *
-     * <p>This accessor is {@link JsonIgnore ignored by Jackson}: the wire
-     * member is written by {@link #getProblemInstanceIdValue()}.</p>
+     * <p>This accessor is {@link JsonIgnore ignored by Jackson}: the wire member is written by
+     * {@link #getProblemInstanceIdValue()}.
      *
      * @return the instance URI, or {@code null}
      */
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     default URI getInstance() {
         return getProblemInstanceId().orNull();
     }
 
     /**
-     * Returns the instance URI under the RFC 7807 {@code instance} JSON
-     * member.
+     * Returns the instance URI under the RFC 7807 {@code instance} JSON member.
      *
-     * <p>See {@link #getProblemTypeTitleValue()} for why serialization uses a
-     * renamed accessor.</p>
+     * <p>See {@link #getProblemTypeTitleValue()} for why serialization uses a renamed accessor.
      *
      * @return the instance URI, or {@code null}
      */
@@ -493,14 +452,14 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
         if (type == null) {
             return false;
         }
-        return getHttpStatus().fold(() -> true, status -> HttpStatusCode.isValid(status).toBoolean());
+        return getHttpStatus()
+                .fold(() -> true, status -> HttpStatusCode.isValid(status).toBoolean());
     }
 
     /**
      * Checks if this ProblemDetail uses the "about:blank" problem type.
      *
-     * @return {@code true} if this uses the "about:blank" type, {@code false}
-     *         otherwise
+     * @return {@code true} if this uses the "about:blank" type, {@code false} otherwise
      */
     @JsonIgnore
     default boolean isAboutBlank() {
@@ -510,11 +469,10 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
     /**
      * Returns the problem title localized for the requested language.
      *
-     * <p>For {@code about:blank}, RFC 7807 requires the title to be the
-     * recommended status phrase; this method resolves that phrase through
-     * {@link HttpStatusMessages}. Other problem types keep their declared
-     * title, because an arbitrary problem URI cannot be mapped back to a
-     * message key.</p>
+     * <p>For {@code about:blank}, RFC 7807 requires the title to be the recommended status phrase;
+     * this method resolves that phrase through {@link HttpStatusMessages}. Other problem types keep
+     * their declared title, because an arbitrary problem URI cannot be mapped back to a message
+     * key.
      *
      * <pre>{@code
      * StandardProblemDetail.aboutBlank(404, Locale.ENGLISH)
@@ -530,25 +488,27 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
         if (!isAboutBlank()) {
             return getTitle();
         }
-        return getHttpStatus().fold(
-                this::getTitle,
-                status -> HttpStatusMessages.titleIfKnown(status, resolved)
-                        .orElse(getTitle() != null
-                                ? getTitle()
-                                : HttpStatusMessages.title(status, resolved))
-                        .orNull());
+        return getHttpStatus()
+                .fold(
+                        this::getTitle,
+                        status ->
+                                HttpStatusMessages.titleIfKnown(status, resolved)
+                                        .orElse(
+                                                getTitle() != null
+                                                        ? getTitle()
+                                                        : HttpStatusMessages.title(
+                                                                status, resolved))
+                                        .orNull());
     }
 
     /**
-     * Returns a copy of this problem detail with its title localized for the
-     * requested language.
+     * Returns a copy of this problem detail with its title localized for the requested language.
      *
-     * <p>For {@code about:blank} this replaces the title with the localized
-     * HTTP status phrase; other problem types keep their declared title. The
-     * implementation is abstract on purpose: a concrete type may carry state
-     * that a generic copy cannot preserve (for example the multi-status
-     * {@code responses} payload), so every permitted type implements it and
-     * returns its own runtime type.</p>
+     * <p>For {@code about:blank} this replaces the title with the localized HTTP status phrase;
+     * other problem types keep their declared title. The implementation is abstract on purpose: a
+     * concrete type may carry state that a generic copy cannot preserve (for example the
+     * multi-status {@code responses} payload), so every permitted type implements it and returns
+     * its own runtime type.
      *
      * <pre>{@code
      * ProblemDetail localized = problem.localized(Locale.GERMAN);
@@ -563,14 +523,11 @@ public sealed interface ProblemDetail permits StandardProblemDetail, MultiStatus
 
     /**
      * Checks if this ProblemDetail has a specific HTTP status code.
-     * 
+     *
      * @param expectedStatus the expected HTTP status code
      * @return true if the status matches, false otherwise
      */
     default boolean hasHttpStatus(int expectedStatus) {
-        return getHttpStatus().fold(
-            v -> false,
-            status -> status.equals(expectedStatus)
-        );
+        return getHttpStatus().fold(v -> false, status -> status.equals(expectedStatus));
     }
 }

@@ -1,22 +1,20 @@
 package eu.infolead.jtk.anomaly.http;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import eu.infolead.jtk.fp.either.Maybe;
 import java.net.URI;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import eu.infolead.jtk.fp.either.Maybe;
-
 /**
  * Standard RFC 4918 multi-status problem detail.
- * <p>
- * Serializes as a regular problem detail plus a {@code multistatus} object
- * containing a {@code response} array.
+ *
+ * <p>Serializes as a regular problem detail plus a {@code multistatus} object containing a {@code
+ * response} array.
  *
  * <pre>{@code
  * StandardMultiStatusProblemDetail detail = new StandardMultiStatusProblemDetail(
@@ -28,22 +26,21 @@ import eu.infolead.jtk.fp.either.Maybe;
  *         List.of(new MultiStatusResponseElement(URI.create("/items/1"), 423)));
  * }</pre>
  *
- * <p>The last six components are RFC 7807 extension members used to
- * correlate an occurrence across systems and to tell a client whether a retry
- * is worthwhile; they mirror {@link StandardProblemDetail}.</p>
+ * <p>The last six components are RFC 7807 extension members used to correlate an occurrence across
+ * systems and to tell a client whether a retry is worthwhile; they mirror {@link
+ * StandardProblemDetail}.
  *
- * @param problemType       the problem type URI (required)
- * @param title             the problem type title (optional)
- * @param status            the HTTP status code (optional, usually 207)
- * @param detail            the detailed explanation (optional)
- * @param instance          the instance identifier (optional)
- * @param responses         the per-resource responses
- * @param correlationId     the cross-system correlation identifier (optional)
- * @param traceId           the distributed-tracing identifier (optional)
- * @param requestId         the request identifier (optional)
- * @param tenantId          the tenant identifier (optional)
- * @param retryable         whether the failed operation may succeed if
- *                          retried (optional)
+ * @param problemType the problem type URI (required)
+ * @param title the problem type title (optional)
+ * @param status the HTTP status code (optional, usually 207)
+ * @param detail the detailed explanation (optional)
+ * @param instance the instance identifier (optional)
+ * @param responses the per-resource responses
+ * @param correlationId the cross-system correlation identifier (optional)
+ * @param traceId the distributed-tracing identifier (optional)
+ * @param requestId the request identifier (optional)
+ * @param tenantId the tenant identifier (optional)
+ * @param retryable whether the failed operation may succeed if retried (optional)
  * @param retryAfterSeconds the recommended retry delay in seconds (optional)
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -59,22 +56,23 @@ public record StandardMultiStatusProblemDetail(
         @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) Maybe<String> requestId,
         @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) Maybe<String> tenantId,
         @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) Maybe<Boolean> retryable,
-        @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) Maybe<Long> retryAfterSeconds) implements MultiStatusProblemDetail {
+        @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) Maybe<Long> retryAfterSeconds)
+        implements MultiStatusProblemDetail {
 
     /**
      * Canonical constructor with validation.
      *
      * @param problemType the problem type URI
-     * @param title       the problem type title
-     * @param status      the HTTP status code; when present it must be 207
-     * @param detail      the detailed explanation
-     * @param instance          the instance URI
-     * @param responses         the per-resource responses
-     * @param correlationId     the correlation identifier
-     * @param traceId           the trace identifier
-     * @param requestId         the request identifier
-     * @param tenantId          the tenant identifier
-     * @param retryable         the retryability hint
+     * @param title the problem type title
+     * @param status the HTTP status code; when present it must be 207
+     * @param detail the detailed explanation
+     * @param instance the instance URI
+     * @param responses the per-resource responses
+     * @param correlationId the correlation identifier
+     * @param traceId the trace identifier
+     * @param requestId the request identifier
+     * @param tenantId the tenant identifier
+     * @param retryable the retryability hint
      * @param retryAfterSeconds the recommended retry delay in seconds
      */
     public StandardMultiStatusProblemDetail {
@@ -100,11 +98,11 @@ public record StandardMultiStatusProblemDetail(
      * Backwards-compatible constructor without extension members.
      *
      * @param problemType the problem type URI
-     * @param title       the problem type title
-     * @param status      the HTTP status code
-     * @param detail      the detailed explanation
-     * @param instance    the instance URI
-     * @param responses   the per-resource responses
+     * @param title the problem type title
+     * @param status the HTTP status code
+     * @param detail the detailed explanation
+     * @param instance the instance URI
+     * @param responses the per-resource responses
      */
     public StandardMultiStatusProblemDetail(
             final URI problemType,
@@ -113,25 +111,35 @@ public record StandardMultiStatusProblemDetail(
             final Maybe<String> detail,
             final Maybe<URI> instance,
             final List<MultiStatusResponseElement> responses) {
-        this(problemType, title, status, detail, instance, responses,
-                Maybe.none(), Maybe.none(), Maybe.none(), Maybe.none(),
-                Maybe.none(), Maybe.none());
+        this(
+                problemType,
+                title,
+                status,
+                detail,
+                instance,
+                responses,
+                Maybe.none(),
+                Maybe.none(),
+                Maybe.none(),
+                Maybe.none(),
+                Maybe.none(),
+                Maybe.none());
     }
 
     /**
      * Creates an instance from the nullable JSON representation.
      *
      * @param problemType the problem type URI
-     * @param title       the optional title
-     * @param status      the optional HTTP status
-     * @param detail      the optional detail
-     * @param instance    the optional instance URI
-     * @param multiStatus       the optional {@code multistatus} wrapper
-     * @param correlationId     the optional correlation identifier
-     * @param traceId           the optional trace identifier
-     * @param requestId         the optional request identifier
-     * @param tenantId          the optional tenant identifier
-     * @param retryable         the optional retryability hint
+     * @param title the optional title
+     * @param status the optional HTTP status
+     * @param detail the optional detail
+     * @param instance the optional instance URI
+     * @param multiStatus the optional {@code multistatus} wrapper
+     * @param correlationId the optional correlation identifier
+     * @param traceId the optional trace identifier
+     * @param requestId the optional request identifier
+     * @param tenantId the optional tenant identifier
+     * @param retryable the optional retryability hint
      * @param retryAfterSeconds the optional retry delay in seconds
      * @return a new multi-status problem detail
      */
@@ -165,14 +173,14 @@ public record StandardMultiStatusProblemDetail(
     }
 
     /**
-     * Creates an instance from the RFC 7807 core members and the
-     * {@code multistatus} payload, without extension members.
+     * Creates an instance from the RFC 7807 core members and the {@code multistatus} payload,
+     * without extension members.
      *
      * @param problemType the problem type URI
-     * @param title       the optional title
-     * @param status      the optional HTTP status
-     * @param detail      the optional detail
-     * @param instance    the optional instance URI
+     * @param title the optional title
+     * @param status the optional HTTP status
+     * @param detail the optional detail
+     * @param instance the optional instance URI
      * @param multiStatus the optional {@code multistatus} wrapper
      * @return a new multi-status problem detail
      */
@@ -183,8 +191,19 @@ public record StandardMultiStatusProblemDetail(
             final String detail,
             final URI instance,
             final MultiStatusProblemDetail.MultiStatus multiStatus) {
-        return fromJson(problemType, title, status, detail, instance, multiStatus,
-                null, null, null, null, null, null);
+        return fromJson(
+                problemType,
+                title,
+                status,
+                detail,
+                instance,
+                multiStatus,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
     }
 
     @Override
@@ -217,8 +236,7 @@ public record StandardMultiStatusProblemDetail(
     }
 
     /**
-     * Legacy accessor retained for source compatibility with the original
-     * record component name.
+     * Legacy accessor retained for source compatibility with the original record component name.
      *
      * @return the title
      * @deprecated use {@link #getProblemTypeTitle()}
@@ -230,8 +248,7 @@ public record StandardMultiStatusProblemDetail(
     }
 
     /**
-     * Legacy accessor retained for source compatibility with the original
-     * record component name.
+     * Legacy accessor retained for source compatibility with the original record component name.
      *
      * @return the HTTP status
      * @deprecated use {@link #getHttpStatus()}
@@ -243,8 +260,7 @@ public record StandardMultiStatusProblemDetail(
     }
 
     /**
-     * Legacy accessor retained for source compatibility with the original
-     * record component name.
+     * Legacy accessor retained for source compatibility with the original record component name.
      *
      * @return the detail
      * @deprecated use {@link #getFullDetail()}
@@ -256,8 +272,7 @@ public record StandardMultiStatusProblemDetail(
     }
 
     /**
-     * Legacy accessor retained for source compatibility with the original
-     * record component name.
+     * Legacy accessor retained for source compatibility with the original record component name.
      *
      * @return the instance URI
      * @deprecated use {@link #getProblemInstanceId()}
@@ -275,37 +290,37 @@ public record StandardMultiStatusProblemDetail(
     }
 
     @Override
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     public Maybe<String> getCorrelationId() {
         return correlationId;
     }
 
     @Override
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     public Maybe<String> getTraceId() {
         return traceId;
     }
 
     @Override
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     public Maybe<String> getRequestId() {
         return requestId;
     }
 
     @Override
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     public Maybe<String> getTenantId() {
         return tenantId;
     }
 
     @Override
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     public Maybe<Boolean> getRetryable() {
         return retryable;
     }
 
     @Override
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     public Maybe<Long> getRetryAfterSeconds() {
         return retryAfterSeconds;
     }
@@ -319,11 +334,11 @@ public record StandardMultiStatusProblemDetail(
      *         true, Maybe.of(3L));
      * }</pre>
      *
-     * @param correlationId     the correlation identifier
-     * @param traceId           the trace identifier
-     * @param requestId         the request identifier
-     * @param tenantId          the tenant identifier
-     * @param retryable         whether a retry may succeed
+     * @param correlationId the correlation identifier
+     * @param traceId the trace identifier
+     * @param requestId the request identifier
+     * @param tenantId the tenant identifier
+     * @param retryable whether a retry may succeed
      * @param retryAfterSeconds the recommended delay in seconds
      * @return a new multi-status problem detail preserving the responses
      */
@@ -334,7 +349,12 @@ public record StandardMultiStatusProblemDetail(
             final Maybe<String> tenantId,
             final Maybe<Boolean> retryable,
             final Maybe<Long> retryAfterSeconds) {
-        return new StandardMultiStatusProblemDetail(problemType, title, status, detail, instance,
+        return new StandardMultiStatusProblemDetail(
+                problemType,
+                title,
+                status,
+                detail,
+                instance,
                 responses,
                 Objects.requireNonNull(correlationId, "correlationId cannot be null"),
                 Objects.requireNonNull(traceId, "traceId cannot be null"),
@@ -347,11 +367,11 @@ public record StandardMultiStatusProblemDetail(
     /**
      * Returns a copy with operational metadata attached.
      *
-     * @param correlationId     the correlation identifier
-     * @param traceId           the trace identifier
-     * @param requestId         the request identifier
-     * @param tenantId          the tenant identifier
-     * @param retryable         whether a retry may succeed
+     * @param correlationId the correlation identifier
+     * @param traceId the trace identifier
+     * @param requestId the request identifier
+     * @param tenantId the tenant identifier
+     * @param retryable whether a retry may succeed
      * @param retryAfterSeconds the recommended delay in seconds
      * @return a new multi-status problem detail preserving the responses
      */
@@ -362,17 +382,21 @@ public record StandardMultiStatusProblemDetail(
             final Maybe<String> tenantId,
             final boolean retryable,
             final Maybe<Long> retryAfterSeconds) {
-        return withExtensions(correlationId, traceId, requestId, tenantId,
-                Maybe.of(retryable), retryAfterSeconds);
+        return withExtensions(
+                correlationId,
+                traceId,
+                requestId,
+                tenantId,
+                Maybe.of(retryable),
+                retryAfterSeconds);
     }
 
     /**
-     * Returns a copy whose title is the localized HTTP status phrase for an
-     * {@code about:blank} problem.
+     * Returns a copy whose title is the localized HTTP status phrase for an {@code about:blank}
+     * problem.
      *
-     * <p>All core members, the {@code responses} payload and the operational
-     * extensions are preserved. Details that do not use {@code about:blank} are
-     * returned unchanged.</p>
+     * <p>All core members, the {@code responses} payload and the operational extensions are
+     * preserved. Details that do not use {@code about:blank} are returned unchanged.
      *
      * <pre>{@code
      * StandardMultiStatusProblemDetail german = detail.localized(Locale.GERMAN);
@@ -388,9 +412,18 @@ public record StandardMultiStatusProblemDetail(
         if (!isAboutBlank()) {
             return this;
         }
-        return new StandardMultiStatusProblemDetail(problemType,
-                Maybe.ofNullable(getLocalizedTitle(resolved)), status, detail,
-                instance, responses, correlationId, traceId, requestId, tenantId,
-                retryable, retryAfterSeconds);
+        return new StandardMultiStatusProblemDetail(
+                problemType,
+                Maybe.ofNullable(getLocalizedTitle(resolved)),
+                status,
+                detail,
+                instance,
+                responses,
+                correlationId,
+                traceId,
+                requestId,
+                tenantId,
+                retryable,
+                retryAfterSeconds);
     }
 }

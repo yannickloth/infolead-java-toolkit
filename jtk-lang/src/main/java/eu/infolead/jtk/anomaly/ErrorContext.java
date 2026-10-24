@@ -1,16 +1,16 @@
 package eu.infolead.jtk.anomaly;
 
+import eu.infolead.jtk.fp.either.Maybe;
+import java.io.Serializable;
 import java.util.Objects;
 
-import eu.infolead.jtk.fp.either.Maybe;
-
 /**
- * Correlation metadata that ties an error occurrence to the request and
- * tenant in which it happened.
+ * Correlation metadata that ties an error occurrence to the request and tenant in which it
+ * happened.
  *
- * <p>Unlike the generated error ID (which is a process-local sequence), these
- * identifiers are supplied by the surrounding infrastructure and therefore
- * correlate across services, logs and traces.</p>
+ * <p>Unlike the generated error ID (which is a process-local sequence), these identifiers are
+ * supplied by the surrounding infrastructure and therefore correlate across services, logs and
+ * traces.
  *
  * <pre>{@code
  * ErrorContext context = ErrorContext.empty()
@@ -24,23 +24,25 @@ import eu.infolead.jtk.fp.either.Maybe;
  * }</pre>
  *
  * @param correlationId the cross-system correlation identifier (optional)
- * @param traceId       the distributed-tracing identifier (optional)
- * @param requestId     the request identifier (optional)
- * @param tenantId      the tenant identifier (optional)
+ * @param traceId the distributed-tracing identifier (optional)
+ * @param requestId the request identifier (optional)
+ * @param tenantId the tenant identifier (optional)
  */
 public record ErrorContext(
         Maybe<String> correlationId,
         Maybe<String> traceId,
         Maybe<String> requestId,
-        Maybe<String> tenantId) {
+        Maybe<String> tenantId)
+        implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Canonical constructor with validation.
      *
      * @param correlationId the cross-system correlation identifier
-     * @param traceId       the distributed-tracing identifier
-     * @param requestId     the request identifier
-     * @param tenantId      the tenant identifier
+     * @param traceId the distributed-tracing identifier
+     * @param requestId the request identifier
+     * @param tenantId the tenant identifier
      */
     public ErrorContext {
         Objects.requireNonNull(correlationId, "correlationId cannot be null");

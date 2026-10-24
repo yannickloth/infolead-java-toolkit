@@ -1,28 +1,25 @@
 package eu.infolead.jtk.logic;
 
-import java.io.Serializable;
-import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
 import eu.infolead.jtk.lang.SonarLintWarning;
 import eu.infolead.jtk.logic.NullableBool.False;
 import eu.infolead.jtk.logic.NullableBool.Null;
 import eu.infolead.jtk.logic.NullableBool.True;
 import jakarta.annotation.Nullable;
+import java.io.Serializable;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
- * This represents a three-valued boolean, which accepts the values
- * {@link NullableBool#TRUE}, {@link NullableBool#FALSE} and
- * {@link NullableBool#NULL}.
+ * This represents a three-valued boolean, which accepts the values {@link NullableBool#TRUE},
+ * {@link NullableBool#FALSE} and {@link NullableBool#NULL}.
  *
- * <h3>Notes</h3>
+ * <h2>Notes</h2>
  *
  * <ol>
- * <li>The API of this class SHOULD always consume and return boxed
- * {@link Boolean} instances instead of unboxed {@code boolean} instances: only
- * the boxed ones are able to represent the three states {@link Boolean#TRUE},
- * {@link Boolean#FALSE} and {@code null}.</li>
+ *   <li>The API of this class SHOULD always consume and return boxed {@link Boolean} instances
+ *       instead of unboxed {@code boolean} instances: only the boxed ones are able to represent the
+ *       three states {@link Boolean#TRUE}, {@link Boolean#FALSE} and {@code null}.
  * </ol>
  */
 public abstract sealed class NullableBool implements Serializable permits True, False, Null {
@@ -78,8 +75,8 @@ public abstract sealed class NullableBool implements Serializable permits True, 
     public abstract NullableBool ifFalse(Consumer<Bool> falseConsumer);
 
     /**
-     * Runs the consumer when this value is {@link #NULL}. The consumer receives
-     * the {@link #NULL} singleton (never a Java {@code null}).
+     * Runs the consumer when this value is {@link #NULL}. The consumer receives the {@link #NULL}
+     * singleton (never a Java {@code null}).
      *
      * @param nullConsumer the consumer to run; ignored for other values
      * @return this
@@ -95,8 +92,7 @@ public abstract sealed class NullableBool implements Serializable permits True, 
     static final class True extends NullableBool {
         private static final long serialVersionUID = 1L;
 
-        private True() {
-        }
+        private True() {}
 
         @Override
         public NullableBool apply(
@@ -142,8 +138,7 @@ public abstract sealed class NullableBool implements Serializable permits True, 
     static final class False extends NullableBool {
         private static final long serialVersionUID = 1L;
 
-        private False() {
-        }
+        private False() {}
 
         @Override
         public NullableBool apply(
@@ -189,8 +184,7 @@ public abstract sealed class NullableBool implements Serializable permits True, 
     static final class Null extends NullableBool {
         private static final long serialVersionUID = 1L;
 
-        private Null() {
-        }
+        private Null() {}
 
         @Override
         public NullableBool apply(

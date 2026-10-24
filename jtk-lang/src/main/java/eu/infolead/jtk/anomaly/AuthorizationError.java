@@ -1,37 +1,41 @@
 package eu.infolead.jtk.anomaly;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import eu.infolead.jtk.fp.either.Maybe;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Objects;
-
-import eu.infolead.jtk.fp.either.Maybe;
 
 /**
  * Represents authentication and authorization failures.
  *
  * @param requirement the access requirement that was not met
- * @param errorType   the specific authorization error type
+ * @param errorType the specific authorization error type
  * @param contextArgs additional arguments for error message formatting
  * @param actualValue the actual value that caused the failure (optional)
- * @param errorId     unique identifier for this error instance (optional)
+ * @param errorId unique identifier for this error instance (optional)
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record AuthorizationError(
         String requirement,
         AuthorizationErrorType errorType,
         Object[] contextArgs,
         @JsonIgnore Maybe<Object> actualValue,
-        @JsonIgnore Maybe<String> errorId) implements SystemError {
+        @JsonIgnore Maybe<String> errorId)
+        implements SystemError {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Canonical constructor with validation.
      *
      * @param requirement the access requirement that was not met
-     * @param errorType   the specific authorization error type
+     * @param errorType the specific authorization error type
      * @param contextArgs additional arguments for message formatting
      * @param actualValue the actual value, if available
-     * @param errorId     the unique error instance identifier, if assigned
+     * @param errorId the unique error instance identifier, if assigned
      */
     public AuthorizationError {
         Objects.requireNonNull(requirement, "requirement cannot be null");
@@ -46,7 +50,7 @@ public record AuthorizationError(
      * Convenience constructor without context args, actual value, or error ID.
      *
      * @param requirement the access requirement that was not met
-     * @param errorType   the specific authorization error type
+     * @param errorType the specific authorization error type
      */
     public AuthorizationError(final String requirement, final AuthorizationErrorType errorType) {
         this(requirement, errorType, new Object[0], Maybe.none(), Maybe.none());
@@ -56,12 +60,14 @@ public record AuthorizationError(
      * Convenience constructor with one message-format argument.
      *
      * @param requirement the access requirement that was not met
-     * @param errorType   the specific authorization error type
-     * @param contextArg  the argument substituted into the message template
+     * @param errorType the specific authorization error type
+     * @param contextArg the argument substituted into the message template
      */
-    public AuthorizationError(final String requirement, final AuthorizationErrorType errorType,
+    public AuthorizationError(
+            final String requirement,
+            final AuthorizationErrorType errorType,
             final String contextArg) {
-        this(requirement, errorType, new Object[] { contextArg }, Maybe.none(), Maybe.none());
+        this(requirement, errorType, new Object[] {contextArg}, Maybe.none(), Maybe.none());
     }
 
     @Override
@@ -75,9 +81,8 @@ public record AuthorizationError(
     }
 
     /**
-     * Returns the message with the error-type text localized for the requested
-     * language; the authorization label is localized too, while the
-     * requirement itself stays untranslated.
+     * Returns the message with the error-type text localized for the requested language; the
+     * authorization label is localized too, while the requirement itself stays untranslated.
      *
      * <pre>{@code
      * AuthorizationError.notAuthenticated()
@@ -90,8 +95,8 @@ public record AuthorizationError(
      */
     @Override
     public String getLocalizedMessage(final Locale locale) {
-        final String label = ErrorLocalizer.of(locale)
-                .label("error.label.authorization", "Authorization");
+        final String label =
+                ErrorLocalizer.of(locale).label("error.label.authorization", "Authorization");
         return String.format("%s: %s", label, getLocalizedTypeMessage(locale));
     }
 
@@ -125,13 +130,21 @@ public record AuthorizationError(
         if (errorId.isPresent().toBoolean()) {
             return this;
         }
-        return new AuthorizationError(requirement, errorType, contextArgs, actualValue,
+        return new AuthorizationError(
+                requirement,
+                errorType,
+                contextArgs,
+                actualValue,
                 Maybe.some(errorType.generateErrorId()));
     }
 
     @Override
     public SystemError withErrorId(final String customErrorId) {
-        return new AuthorizationError(requirement, errorType, contextArgs, actualValue,
+        return new AuthorizationError(
+                requirement,
+                errorType,
+                contextArgs,
+                actualValue,
                 Maybe.some(Objects.requireNonNull(customErrorId, "customErrorId")));
     }
 
@@ -158,11 +171,17 @@ public record AuthorizationError(
 
     @Override
     public String toString() {
-        return "AuthorizationError[requirement=" + requirement
-                + ", errorType=" + errorType
-                + ", contextArgs=" + SystemError.renderValue(contextArgs)
-                + ", actualValue=" + actualValue.fold(() -> "none", SystemError::renderValue)
-                + ", errorId=" + errorId + "]";
+        return "AuthorizationError[requirement="
+                + requirement
+                + ", errorType="
+                + errorType
+                + ", contextArgs="
+                + SystemError.renderValue(contextArgs)
+                + ", actualValue="
+                + actualValue.fold(() -> "none", SystemError::renderValue)
+                + ", errorId="
+                + errorId
+                + "]";
     }
 
     /**
@@ -171,7 +190,8 @@ public record AuthorizationError(
      * @return the authorization error
      */
     public static AuthorizationError notAuthenticated() {
-        return new AuthorizationError("Authentication required", AuthorizationErrorType.NOT_AUTHENTICATED);
+        return new AuthorizationError(
+                "Authentication required", AuthorizationErrorType.NOT_AUTHENTICATED);
     }
 
     /**
@@ -181,7 +201,34 @@ public record AuthorizationError(
      * @return the authorization error
      */
     public static AuthorizationError insufficientPermissions(final String requiredRole) {
-        return new AuthorizationError("Insufficient permissions",
-                AuthorizationErrorType.INSUFFICIENT_PERMISSIONS, requiredRole);
+        return new AuthorizationError(
+                "Insufficient permissions",
+                AuthorizationErrorType.INSUFFICIENT_PERMISSIONS,
+                requiredRole);
+    }
+
+    /**
+     * Restores the record from its JSON representation.
+     *
+     * <p>The operational members ({@code actualValue}, {@code errorId}) are not part of the wire
+     * contract and are restored as {@link Maybe#none()}. They are reattached by the application
+     * when an error crosses a process boundary.
+     *
+     * @param requirement the access requirement
+     * @param errorType the error type
+     * @param contextArgs the message-format arguments
+     * @return the restored error
+     */
+    @JsonCreator
+    public static AuthorizationError fromJson(
+            @JsonProperty("requirement") final String requirement,
+            @JsonProperty("errorType") final AuthorizationErrorType errorType,
+            @JsonProperty("contextArgs") final Object[] contextArgs) {
+        return new AuthorizationError(
+                requirement,
+                errorType,
+                contextArgs == null ? new Object[0] : contextArgs,
+                Maybe.none(),
+                Maybe.none());
     }
 }

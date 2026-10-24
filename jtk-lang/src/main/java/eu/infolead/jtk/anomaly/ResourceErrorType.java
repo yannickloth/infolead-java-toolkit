@@ -1,7 +1,7 @@
 package eu.infolead.jtk.anomaly;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import eu.infolead.jtk.http.HttpStatus;
-
 import java.net.URI;
 
 /**
@@ -20,17 +20,21 @@ public enum ResourceErrorType implements ErrorType {
 
     /** The requested resource was not found. */
     NOT_FOUND(
-        6001, "NOT_FOUND", "Resource with ID %s not found",
-            HttpStatus.NOT_FOUND.code(), "Not Found",
-        ErrorCategory.RESOURCE
-    ),
+            6001,
+            "NOT_FOUND",
+            "Resource with ID %s not found",
+            HttpStatus.NOT_FOUND.code(),
+            "Not Found",
+            ErrorCategory.RESOURCE),
 
     /** The resource already exists. */
     ALREADY_EXISTS(
-        6002, "ALREADY_EXISTS", "Resource with ID %s already exists",
-            HttpStatus.CONFLICT.code(), "Conflict - Resource Already Exists",
-        ErrorCategory.RESOURCE
-    );
+            6002,
+            "ALREADY_EXISTS",
+            "Resource with ID %s already exists",
+            HttpStatus.CONFLICT.code(),
+            "Conflict - Resource Already Exists",
+            ErrorCategory.RESOURCE);
 
     private final int typeNumber;
     private final String code;
@@ -40,8 +44,13 @@ public enum ResourceErrorType implements ErrorType {
     private final String problemTitle;
     private final ErrorCategory category;
 
-    ResourceErrorType(int typeNumber, String code, String messageTemplate, int httpStatus,
-                     String problemTitle, ErrorCategory category) {
+    ResourceErrorType(
+            int typeNumber,
+            String code,
+            String messageTemplate,
+            int httpStatus,
+            String problemTitle,
+            ErrorCategory category) {
         this.typeNumber = typeNumber;
         this.code = code;
         this.messageTemplate = messageTemplate;
@@ -51,11 +60,56 @@ public enum ResourceErrorType implements ErrorType {
         this.category = category;
     }
 
-    @Override public int getTypeNumber() { return typeNumber; }
-    @Override public String getCode() { return code; }
-    @Override public String getMessageTemplate() { return messageTemplate; }
-    @Override public int getHttpStatus() { return httpStatus; }
-    @Override public URI getProblemType() { return problemType; }
-    @Override public String getProblemTitle() { return problemTitle; }
-    @Override public ErrorCategory getCategory() { return category; }
+    @Override
+    public int getTypeNumber() {
+        return typeNumber;
+    }
+
+    @Override
+    public String getCode() {
+        return code;
+    }
+
+    @Override
+    public String getMessageTemplate() {
+        return messageTemplate;
+    }
+
+    @Override
+    public int getHttpStatus() {
+        return httpStatus;
+    }
+
+    @Override
+    public URI getProblemType() {
+        return problemType;
+    }
+
+    @Override
+    public String getProblemTitle() {
+        return problemTitle;
+    }
+
+    @Override
+    public ErrorCategory getCategory() {
+        return category;
+    }
+
+    /**
+     * Reads the enum constant from its stable message key, which is also the JSON representation
+     * written by {@code ErrorType#getMessageKey()}.
+     *
+     * @param code the stable message key
+     * @return the matching constant
+     * @throws IllegalArgumentException if the code is unknown
+     */
+    @JsonCreator
+    static ResourceErrorType fromJson(final String code) {
+        for (final ResourceErrorType value : values()) {
+            if (value.getMessageKey().equals(code)) {
+                return value;
+            }
+        }
+        throw new IllegalArgumentException("Unknown ResourceErrorType code: " + code);
+    }
 }

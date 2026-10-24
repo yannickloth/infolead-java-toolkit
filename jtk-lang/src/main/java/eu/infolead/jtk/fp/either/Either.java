@@ -1,13 +1,7 @@
 package eu.infolead.jtk.fp.either;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import eu.infolead.jtk.fp.CheckedFunction;
 import eu.infolead.jtk.fp.CheckedSupplier;
 import eu.infolead.jtk.fp.Fn;
@@ -16,26 +10,64 @@ import eu.infolead.jtk.fp.Provider;
 import eu.infolead.jtk.lang.AliasFor;
 import eu.infolead.jtk.lang.CompilerWarning;
 import eu.infolead.jtk.logic.Bool;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Interface for an <em>Either</em> type.
- * <p>
- * An either type is a type that may contain any of two values (of two different
- * types).
- * <p>
- * By convention, any successful value is wrapped by a right instance while any
- * error value is wrapped by the left instance.
- * <p>
- * This interface has more specialised sub-interfaces: {@link Maybe},
- * {@link Validation} and {@link Result}.
+ *
+ * <p>An either type is a type that may contain any of two values (of two different types).
+ *
+ * <p>By convention, any successful value is wrapped by a right instance while any error value is
+ * wrapped by the left instance.
+ *
+ * <p>This interface has more specialised sub-interfaces: {@link Maybe}, {@link Validation} and
+ * {@link Result}.
  */
 public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<L, R>
         permits AbstractEither, Maybe, Result, Validation {
     /**
+     * Reads the {@code left}/{@code right} JSON envelope.
+     *
+     * <p>The published wire contract of every {@link Either} is a single-member object: {@code
+     * {"left": ...}} for a left value and {@code {"right": ...}} for a right value. Exactly one
+     * branch MUST be present and non-null; the payload type is resolved from the generic parameters
+     * declared by the consumer (for example {@code Either<SystemError, Order>}), so the envelope
+     * needs no type hints and round-trips without a registered module.
+     *
+     * @param <L> the left type
+     * @param <R> the right type
+     * @param left the left value, or {@code null} when the envelope is a right
+     * @param right the right value, or {@code null} when the envelope is a left
+     * @return the envelope as an {@code Either}
+     * @throws IllegalArgumentException if no branch, or both branches, are present
+     */
+    @JsonCreator
+    static <L, R> Either<L, R> fromJson(
+            @JsonProperty("left") final L left, @JsonProperty("right") final R right) {
+        if (left != null) {
+            if (right != null) {
+                throw new IllegalArgumentException(
+                        "Either JSON envelope must contain exactly one of 'left' and 'right'");
+            }
+            return Either.left(left);
+        }
+        if (right != null) {
+            return Either.right(right);
+        }
+        throw new IllegalArgumentException("Either JSON envelope must contain 'left' or 'right'");
+    }
+
+    /**
      * Returns a new right instance with the specified value.
-     * 
-     * @param <G>   the type of the left value
-     * @param <D>   the type of the right value
+     *
+     * @param <G> the type of the left value
+     * @param <D> the type of the right value
      * @param value the value contained in the right instance
      * @return a new right instance with the specified value.
      */
@@ -45,9 +77,9 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
 
     /**
      * Returns a new left instance with the specified value.
-     * 
-     * @param <G>   the type of the left value
-     * @param <D>   the type of the right value
+     *
+     * @param <G> the type of the left value
+     * @param <D> the type of the right value
      * @param value the value contained in the left instance
      * @return a new left instance with the specified value.
      */
@@ -57,23 +89,22 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
 
     /**
      * Checks if this is a right instance.
-     * 
-     * @return {@link Bool#TRUE} if this is a right instance, {@link Bool#FALSE}
-     *         else.
+     *
+     * @return {@link Bool#TRUE} if this is a right instance, {@link Bool#FALSE} else.
      */
     Bool isRight();
 
     /**
      * Checks if this is a left instance.
-     * 
-     * @return {@link Bool#TRUE} if this is a left instance, {@link Bool#FALSE}
-     *         else.
+     *
+     * @return {@link Bool#TRUE} if this is a left instance, {@link Bool#FALSE} else.
      */
     Bool isLeft();
 
     @SuppressWarnings(CompilerWarning.UNCHECKED)
     default <R1> Either<L, R1> map(final Mapper<R1, ? super R> mapper) {
-        return fold(l -> (Either<L, R1>) Either.left(l),
+        return fold(
+                l -> (Either<L, R1>) Either.left(l),
                 r -> (Either<L, R1>) Either.right(mapper.map(r)));
     }
 
@@ -83,7 +114,8 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
 
     @SuppressWarnings(CompilerWarning.UNCHECKED)
     default <L1> Either<L1, R> mapLeft(final Mapper<L1, ? super L> mapper) {
-        return fold(l -> (Either<L1, R>) Either.left(mapper.map(l)),
+        return fold(
+                l -> (Either<L1, R>) Either.left(mapper.map(l)),
                 r -> (Either<L1, R>) Either.right(r));
     }
 
@@ -92,15 +124,14 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
     }
 
     /**
-     * <p>
-     *     In Railway-Oriented Programming, this method transforms a "track switch" function (a switch is something that
-     *     has a one-track input and returns a two-track output) into a two-track input function that returns a
-     *     two-track output.
-     * </p>
-     * <p>
-     *     This is of course very different from a combination of validation functions, in which usually one wants to
-     *     get the full list of anomalies: this only returns the first anomaly and short-circuits all following steps.
-     * </p>
+     * In Railway-Oriented Programming, this method transforms a "track switch" function (a switch
+     * is something that has a one-track input and returns a two-track output) into a two-track
+     * input function that returns a two-track output.
+     *
+     * <p>This is of course very different from a combination of validation functions, in which
+     * usually one wants to get the full list of anomalies: this only returns the first anomaly and
+     * short-circuits all following steps.
+     *
      * @param mapper
      * @return
      * @param <G>
@@ -130,8 +161,8 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
     /**
      * Another name for {@link Either#flatMap(Mapper)}.
      *
-     * @param <G>    the new left type
-     * @param <D>    the new right type
+     * @param <G> the new left type
+     * @param <D> the new right type
      * @param mapper the railway switch applied to the right value
      * @return this if it is a left instance, otherwise the mapped either
      */
@@ -143,9 +174,9 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
     /**
      * Another name for {@link Either#flatMap(Supplier)}.
      *
-     * @param <G>      the new left type
-     * @param <D>      the new right type
-     * @param <E>      the concrete either type returned by the supplier
+     * @param <G> the new left type
+     * @param <D> the new right type
+     * @param <E> the concrete either type returned by the supplier
      * @param supplier provides the next either
      * @return this if it is a left instance, otherwise the supplied either
      */
@@ -157,8 +188,8 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
     /**
      * Alias for {@link Either#flatMap(Mapper)}.
      *
-     * @param <G>    the new left type
-     * @param <D>    the new right type
+     * @param <G> the new left type
+     * @param <D> the new right type
      * @param mapper the railway switch applied to the right value
      * @return this if it is a left instance, otherwise the mapped either
      */
@@ -173,7 +204,8 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
     }
 
     @AliasFor(type = Either.class, method = "flatMap")
-    default <G extends L, D, E extends Either<G, D>> E ifRightDo(final Mapper<E, ? super R> mapper) {
+    default <G extends L, D, E extends Either<G, D>> E ifRightDo(
+            final Mapper<E, ? super R> mapper) {
         return flatMap(mapper);
     }
 
@@ -235,20 +267,19 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
     }
 
     /**
-     * Swaps the left and right values of this instance: a left becomes a right with
-     * the same value, and a right becomes a left with the same value.
-     * 
+     * Swaps the left and right values of this instance: a left becomes a right with the same value,
+     * and a right becomes a left with the same value.
+     *
      * @param <E> The type of the returned {@link Either}.
-     * @return a new swapped {@link Either} with the same value. Never returns
-     *         {@code null}.
+     * @return a new swapped {@link Either} with the same value. Never returns {@code null}.
      */
     <E extends Either<R, L>> E swap();
 
     /**
      * Returns this instance if it is a right instance, otherwise {@code null}.
-     * <p>
-     * <strong>Note:</strong> prefer {@link #orElse(Either)} or {@link #isRight()}
-     * when a null result would be ambiguous.
+     *
+     * <p><strong>Note:</strong> prefer {@link #orElse(Either)} or {@link #isRight()} when a null
+     * result would be ambiguous.
      *
      * @param <E> the concrete either type
      * @return this instance for a right value, {@code null} for a left value
@@ -261,63 +292,66 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
     // ====================== NEW RAILWAY ORIENTED PROGRAMMING OPERATIONS ======================
 
     /**
-     * <h3>Railway Metaphor: Bypass Function for Both Tracks</h3>
-     * Transform both success track (right) and error track (left) values simultaneously.
-     * This is like installing signal processors that work on both the main railway line
-     * and the emergency siding - the train stays on whichever track it was already on,
-     * but the cargo gets transformed as it passes through.
-     * 
-     * <p>In Railway-Oriented Programming, this is a "bypass function" that operates
-     * on both tracks without changing which track the train is on.</p>
-     * 
+     *
+     *
+     * <h4>Railway Metaphor: Bypass Function for Both Tracks</h4>
+     *
+     * Transform both success track (right) and error track (left) values simultaneously. This is
+     * like installing signal processors that work on both the main railway line and the emergency
+     * siding - the train stays on whichever track it was already on, but the cargo gets transformed
+     * as it passes through.
+     *
+     * <p>In Railway-Oriented Programming, this is a "bypass function" that operates on both tracks
+     * without changing which track the train is on.
+     *
      * @param <L1> the new error track cargo type
      * @param <R1> the new success track cargo type
      * @param leftMapper transformer for error track cargo
      * @param rightMapper transformer for success track cargo
      * @return Either with transformed cargo, staying on the same track
-     * 
      * @see <a href="https://fsharpforfunandprofit.com/rop/">Railway Oriented Programming</a>
      */
     @SuppressWarnings(CompilerWarning.UNCHECKED)
-    default <L1, R1> Either<L1, R1> bimap(final Fn.FN1<L1, ? super L> leftMapper, final Fn.FN1<R1, ? super R> rightMapper) {
+    default <L1, R1> Either<L1, R1> bimap(
+            final Fn.FN1<L1, ? super L> leftMapper, final Fn.FN1<R1, ? super R> rightMapper) {
         return fold(
-            l -> (Either<L1, R1>) Either.left(leftMapper.apply(l)),
-            r -> (Either<L1, R1>) Either.right(rightMapper.apply(r))
-        );
+                l -> (Either<L1, R1>) Either.left(leftMapper.apply(l)),
+                r -> (Either<L1, R1>) Either.right(rightMapper.apply(r)));
     }
 
     /**
-     * <h3>Railway Metaphor: Track Junction with Function Train</h3>
-     * Apply a function carried by one train to data carried by another train.
-     * This is like having two trains meet at a railway junction - one carrying
-     * processing equipment (function) and another carrying raw materials (data).
-     * 
-     * <p>Both trains must be on the success track for the processing to happen.
-     * If either train is derailed (on error track), the junction fails and
-     * the error gets passed along.</p>
-     * 
+     *
+     *
+     * <h4>Railway Metaphor: Track Junction with Function Train</h4>
+     *
+     * Apply a function carried by one train to data carried by another train. This is like having
+     * two trains meet at a railway junction - one carrying processing equipment (function) and
+     * another carrying raw materials (data).
+     *
+     * <p>Both trains must be on the success track for the processing to happen. If either train is
+     * derailed (on error track), the junction fails and the error gets passed along.
+     *
      * @param <R1> the type of processed cargo after applying the function
      * @param functionEither a train carrying processing function
      * @return Either containing processed cargo, or the first error encountered
      */
     @SuppressWarnings(CompilerWarning.UNCHECKED)
     default <R1> Either<L, R1> apply(final Either<L, Mapper<R1, ? super R>> functionEither) {
-        return functionEither.fold(
-            l -> (Either<L, R1>) Either.left(l),
-            f -> this.map(f)
-        );
+        return functionEither.fold(l -> (Either<L, R1>) Either.left(l), f -> this.map(f));
     }
 
     /**
-     * <h3>Railway Metaphor: Two-Train Cargo Merger</h3>
-     * Combine cargo from two trains at a railway junction using a merger function.
-     * Both trains must arrive successfully on the success track for the cargo 
-     * combination to happen. If either train is derailed, the merger operation
-     * fails and the error is propagated.
-     * 
-     * <p>This is like having two freight trains meet at a junction where their
-     * cargo gets combined into a new shipment that continues on the success track.</p>
-     * 
+     *
+     *
+     * <h4>Railway Metaphor: Two-Train Cargo Merger</h4>
+     *
+     * Combine cargo from two trains at a railway junction using a merger function. Both trains must
+     * arrive successfully on the success track for the cargo combination to happen. If either train
+     * is derailed, the merger operation fails and the error is propagated.
+     *
+     * <p>This is like having two freight trains meet at a junction where their cargo gets combined
+     * into a new shipment that continues on the success track.
+     *
      * @param <R1> the type of cargo from the second train
      * @param <R2> the type of combined cargo
      * @param other the second train carrying cargo to combine
@@ -325,20 +359,20 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
      * @return Either containing the merged cargo, or the first error encountered
      */
     @SuppressWarnings(CompilerWarning.UNCHECKED)
-    default <R1, R2> Either<L, R2> map2(final Either<L, R1> other, final Fn.FN2<R2, R, R1> combiner) {
+    default <R1, R2> Either<L, R2> map2(
+            final Either<L, R1> other, final Fn.FN2<R2, R, R1> combiner) {
         return this.fold(
-            l -> (Either<L, R2>) Either.left(l),
-            r -> other.fold(
                 l -> (Either<L, R2>) Either.left(l),
-                r1 -> (Either<L, R2>) Either.right(combiner.apply(r, r1))
-            )
-        );
+                r ->
+                        other.fold(
+                                l -> (Either<L, R2>) Either.left(l),
+                                r1 -> (Either<L, R2>) Either.right(combiner.apply(r, r1))));
     }
 
     /**
-     * Combine three Either values using a ternary function.
-     * All three Either instances must be Right for the function to be applied.
-     * 
+     * Combine three Either values using a ternary function. All three Either instances must be
+     * Right for the function to be applied.
+     *
      * @param <R1> the type of the second Either's right value
      * @param <R2> the type of the third Either's right value
      * @param <R3> the result type
@@ -348,30 +382,37 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
      * @return Either containing the combined result, or the first error encountered
      */
     @SuppressWarnings(CompilerWarning.UNCHECKED)
-    default <R1, R2, R3> Either<L, R3> map3(final Either<L, R1> second, final Either<L, R2> third, 
-                                            final Fn.FN3<R3, R, R1, R2> combiner) {
+    default <R1, R2, R3> Either<L, R3> map3(
+            final Either<L, R1> second,
+            final Either<L, R2> third,
+            final Fn.FN3<R3, R, R1, R2> combiner) {
         return this.fold(
-            l -> (Either<L, R3>) Either.left(l),
-            r -> second.fold(
                 l -> (Either<L, R3>) Either.left(l),
-                r1 -> third.fold(
-                    l -> (Either<L, R3>) Either.left(l),
-                    r2 -> (Either<L, R3>) Either.right(combiner.apply(r, r1, r2))
-                )
-            )
-        );
+                r ->
+                        second.fold(
+                                l -> (Either<L, R3>) Either.left(l),
+                                r1 ->
+                                        third.fold(
+                                                l -> (Either<L, R3>) Either.left(l),
+                                                r2 ->
+                                                        (Either<L, R3>)
+                                                                Either.right(
+                                                                        combiner.apply(
+                                                                                r, r1, r2)))));
     }
 
     /**
-     * <h3>Railway Metaphor: Railway Switch with Inspection</h3>
-     * Inspect cargo at a railway switch point. If the cargo passes inspection,
-     * the train continues on the success track. If inspection fails, the train
-     * gets switched to the error track.
-     * 
-     * <p>This is like having an automated inspection system at a railway junction
-     * that can divert trains to a maintenance siding if their cargo doesn't meet
-     * quality standards. Trains already on the error track bypass the inspection.</p>
-     * 
+     *
+     *
+     * <h4>Railway Metaphor: Railway Switch with Inspection</h4>
+     *
+     * Inspect cargo at a railway switch point. If the cargo passes inspection, the train continues
+     * on the success track. If inspection fails, the train gets switched to the error track.
+     *
+     * <p>This is like having an automated inspection system at a railway junction that can divert
+     * trains to a maintenance siding if their cargo doesn't meet quality standards. Trains already
+     * on the error track bypass the inspection.
+     *
      * @param predicate the inspection criteria that cargo must satisfy
      * @param errorSupplier provides the error message if inspection fails
      * @return Either staying on current track, or switched to error track if inspection fails
@@ -379,16 +420,18 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
     @SuppressWarnings(CompilerWarning.UNCHECKED)
     default Either<L, R> filter(final Predicate<R> predicate, final Supplier<L> errorSupplier) {
         return fold(
-            l -> (Either<L, R>) this,
-            r -> predicate.test(r) ? (Either<L, R>) this : Either.left(errorSupplier.get())
-        );
+                l -> (Either<L, R>) this,
+                r -> predicate.test(r) ? (Either<L, R>) this : Either.left(errorSupplier.get()));
     }
 
     /**
-     * <h3>Railway Metaphor: Safety Check Alias</h3>
-     * Alias for filter. Ensures that cargo meets safety standards at a checkpoint.
-     * Same as filter() but with clearer intent for safety/validation scenarios.
-     * 
+     *
+     *
+     * <h4>Railway Metaphor: Safety Check Alias</h4>
+     *
+     * Alias for filter. Ensures that cargo meets safety standards at a checkpoint. Same as filter()
+     * but with clearer intent for safety/validation scenarios.
+     *
      * @param predicate the safety standards that cargo must satisfy
      * @param errorSupplier provides the error message if safety check fails
      * @return Either staying on track, or switched to error track if safety violated
@@ -398,9 +441,9 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
     }
 
     /**
-     * Combine this Either with another into a tuple.
-     * Both must be Right for the combination to succeed.
-     * 
+     * Combine this Either with another into a tuple. Both must be Right for the combination to
+     * succeed.
+     *
      * @param <R1> the type of the other Either's right value
      * @param other the Either to zip with
      * @return Either containing a Tuple2 of both right values, or the first error
@@ -411,28 +454,31 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
 
     /**
      * Combine this Either with another using a function.
-     * 
+     *
      * @param <R1> the type of the other Either's right value
      * @param <R2> the result type
      * @param other the Either to zip with
      * @param combiner function to combine both right values
      * @return Either containing the combined result, or the first error
      */
-    default <R1, R2> Either<L, R2> zipWith(final Either<L, R1> other, final Fn.FN2<R2, R, R1> combiner) {
+    default <R1, R2> Either<L, R2> zipWith(
+            final Either<L, R1> other, final Fn.FN2<R2, R, R1> combiner) {
         return map2(other, combiner);
     }
 
     /**
-     * <h3>Railway Metaphor: Emergency Recovery System</h3>
-     * Attempt to recover from a derailment using an emergency recovery procedure.
-     * If the train is on the error track (derailed), try to get it back on track
-     * using the recovery function. If the train is already on the success track,
-     * no recovery is needed.
-     * 
-     * <p>This is like having an emergency response team that can potentially
-     * repair a derailed train and get it back on the main line, or decide that
-     * the damage is too severe and issue a different error report.</p>
-     * 
+     *
+     *
+     * <h4>Railway Metaphor: Emergency Recovery System</h4>
+     *
+     * Attempt to recover from a derailment using an emergency recovery procedure. If the train is
+     * on the error track (derailed), try to get it back on track using the recovery function. If
+     * the train is already on the success track, no recovery is needed.
+     *
+     * <p>This is like having an emergency response team that can potentially repair a derailed
+     * train and get it back on the main line, or decide that the damage is too severe and issue a
+     * different error report.
+     *
      * @param recovery emergency procedure to attempt getting back on track
      * @return Either with recovered train or this Either if already on success track
      */
@@ -443,15 +489,14 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
 
     /**
      * Merges an either whose left and right types are expected to be the same.
-     * <p>
-     * This method cannot enforce that {@code L} and {@code R} are identical at
-     * compile time. If they differ at runtime, the cast to {@code T} may fail with
-     * a {@link ClassCastException} once the result is used.
+     *
+     * <p>This method cannot enforce that {@code L} and {@code R} are identical at compile time. If
+     * they differ at runtime, the cast to {@code T} may fail with a {@link ClassCastException} once
+     * the result is used.
      *
      * @param <T> the expected common type of both sides
      * @return the value from either side
-     * @throws ClassCastException if the contained value is not assignable to
-     *                            {@code T}
+     * @throws ClassCastException if the contained value is not assignable to {@code T}
      */
     @SuppressWarnings(CompilerWarning.UNCHECKED)
     default <T> T merge() {
@@ -462,20 +507,21 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
 
     /**
      * Convert an Optional to Either.
-     * 
+     *
      * @param <L> the error type
      * @param <R> the success type
      * @param errorSupplier provides the error value if Optional is empty
      * @param optional the Optional to convert
      * @return Either.right if Optional has value, Either.left otherwise
      */
-    static <L, R> Either<L, R> fromOptional(final Supplier<L> errorSupplier, final Optional<R> optional) {
+    static <L, R> Either<L, R> fromOptional(
+            final Supplier<L> errorSupplier, final Optional<R> optional) {
         return optional.map(Either::<L, R>right).orElseGet(() -> Either.left(errorSupplier.get()));
     }
 
     /**
      * Convert a boolean condition to Either.
-     * 
+     *
      * @param <L> the error type
      * @param <R> the success type
      * @param condition the boolean condition
@@ -483,35 +529,32 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
      * @param successSupplier provides the success value if condition is true
      * @return Either.right if condition is true, Either.left otherwise
      */
-    static <L, R> Either<L, R> fromBoolean(final boolean condition, 
-                                           final Supplier<L> errorSupplier,
-                                           final Supplier<R> successSupplier) {
+    static <L, R> Either<L, R> fromBoolean(
+            final boolean condition,
+            final Supplier<L> errorSupplier,
+            final Supplier<R> successSupplier) {
         return condition ? Either.right(successSupplier.get()) : Either.left(errorSupplier.get());
     }
 
     /**
-     * Executes a computation that might throw an exception, converting it to an
-     * either: the computation's value becomes a right instance, and a thrown
-     * exception becomes a left instance carrying the mapped error.
-     * <p>
-     * The computation is a {@link CheckedSupplier}, so lambdas and method
-     * references may declare checked exceptions; callers never wrap the
-     * computation in try/catch just to call this method. Unlike
-     * {@link Result#fromTry(Fn.FN1, CheckedSupplier)}, a computation returning
-     * {@code null} is accepted: it produces a right instance carrying
-     * {@code null}.
-     * <p>
-     * <strong>Error vs exception policy:</strong> only {@link Exception}
-     * instances are captured &mdash; checked exceptions and runtime exceptions
-     * alike. {@link Error} instances (such as {@link OutOfMemoryError},
-     * {@link StackOverflowError} or {@link LinkageError}) are deliberately not
-     * captured: they signal JVM-level failures from which the process cannot
-     * reliably continue, and converting them to left values would let the
-     * program resume in an undefined state. They propagate to the caller, as
-     * does any {@link Throwable} that is neither an {@link Exception} nor an
-     * {@link Error}.
+     * Executes a computation that might throw an exception, converting it to an either: the
+     * computation's value becomes a right instance, and a thrown exception becomes a left instance
+     * carrying the mapped error.
      *
-     * <p>Example &mdash; capture a checked exception without any try/catch:</p>
+     * <p>The computation is a {@link CheckedSupplier}, so lambdas and method references may declare
+     * checked exceptions; callers never wrap the computation in try/catch just to call this method.
+     * Unlike {@link Result#fromTry(Fn.FN1, CheckedSupplier)}, a computation returning {@code null}
+     * is accepted: it produces a right instance carrying {@code null}.
+     *
+     * <p><strong>Error vs exception policy:</strong> only {@link Exception} instances are captured
+     * &mdash; checked exceptions and runtime exceptions alike. {@link Error} instances (such as
+     * {@link OutOfMemoryError}, {@link StackOverflowError} or {@link LinkageError}) are
+     * deliberately not captured: they signal JVM-level failures from which the process cannot
+     * reliably continue, and converting them to left values would let the program resume in an
+     * undefined state. They propagate to the caller, as does any {@link Throwable} that is neither
+     * an {@link Exception} nor an {@link Error}.
+     *
+     * <p>Example &mdash; capture a checked exception without any try/catch:
      *
      * <pre>{@code
      * Either<String, String> content = Either.fromTry(
@@ -524,10 +567,10 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
      * @param errorMapper function to convert exceptions to error values
      * @param computation the computation that might throw
      * @return Either.right with result, or Either.left with mapped exception
-     * @throws NullPointerException if {@code errorMapper} or {@code computation}
-     *                              is {@code null}
+     * @throws NullPointerException if {@code errorMapper} or {@code computation} is {@code null}
      */
-    static <L, R> Either<L, R> fromTry(final Fn.FN1<L, Exception> errorMapper, final CheckedSupplier<R> computation) {
+    static <L, R> Either<L, R> fromTry(
+            final Fn.FN1<L, Exception> errorMapper, final CheckedSupplier<R> computation) {
         Objects.requireNonNull(errorMapper, "errorMapper");
         Objects.requireNonNull(computation, "computation");
         final R value;
@@ -542,13 +585,12 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
     }
 
     /**
-     * Lifts a function that might throw an exception into a railway switch: the
-     * returned function applies the computation to its argument and wraps the
-     * outcome in an either, using the same error-vs-exception policy as
-     * {@link #fromTry}. A computation returning {@code null} produces a right
-     * instance carrying {@code null}, as in {@link #fromTry}.
+     * Lifts a function that might throw an exception into a railway switch: the returned function
+     * applies the computation to its argument and wraps the outcome in an either, using the same
+     * error-vs-exception policy as {@link #fromTry}. A computation returning {@code null} produces
+     * a right instance carrying {@code null}, as in {@link #fromTry}.
      *
-     * <p>Example &mdash; turn a throwing reader into a railway switch:</p>
+     * <p>Example &mdash; turn a throwing reader into a railway switch:
      *
      * <pre>{@code
      * Fn.FN1<Either<String, String>, Path> read = Either.liftTry(
@@ -563,13 +605,12 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
      * @param <R> the success type
      * @param errorMapper function to convert exceptions to error values
      * @param computation the function that might throw
-     * @return a function producing Either.right with the result, or
-     *         Either.left with the mapped exception
-     * @throws NullPointerException if {@code errorMapper} or {@code computation}
-     *                              is {@code null}
+     * @return a function producing Either.right with the result, or Either.left with the mapped
+     *     exception
+     * @throws NullPointerException if {@code errorMapper} or {@code computation} is {@code null}
      */
-    static <L, T, R> Fn.FN1<Either<L, R>, T> liftTry(final Fn.FN1<L, Exception> errorMapper,
-            final CheckedFunction<T, R> computation) {
+    static <L, T, R> Fn.FN1<Either<L, R>, T> liftTry(
+            final Fn.FN1<L, Exception> errorMapper, final CheckedFunction<T, R> computation) {
         Objects.requireNonNull(errorMapper, "errorMapper");
         Objects.requireNonNull(computation, "computation");
         return value -> fromTry(errorMapper, () -> computation.apply(value));
@@ -577,7 +618,7 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
 
     /**
      * Lift a regular function to work with Either values.
-     * 
+     *
      * @param <L> the error type
      * @param <R> the input type
      * @param <R1> the output type
@@ -590,7 +631,7 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
 
     /**
      * Lift a binary function to work with Either values.
-     * 
+     *
      * @param <L> the error type
      * @param <R1> the first input type
      * @param <R2> the second input type
@@ -606,9 +647,9 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
     // ====================== COLLECTION OPERATIONS ======================
 
     /**
-     * Transform a collection of values using a function that returns Either,
-     * collecting all results. Stops at first error.
-     * 
+     * Transform a collection of values using a function that returns Either, collecting all
+     * results. Stops at first error.
+     *
      * @param <L> the error type
      * @param <T> the input element type
      * @param <R> the output element type
@@ -616,13 +657,14 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
      * @param mapper function that transforms elements and might fail
      * @return Either containing list of all results, or first error
      */
-    static <L, T, R> Either<L, List<R>> traverse(final Collection<T> collection,
-                                                 final Mapper<Either<L, R>, ? super T> mapper) {
+    static <L, T, R> Either<L, List<R>> traverse(
+            final Collection<T> collection, final Mapper<Either<L, R>, ? super T> mapper) {
         Objects.requireNonNull(collection, "collection");
         Objects.requireNonNull(mapper, "mapper");
         final List<R> results = new ArrayList<>(collection.size());
         for (final T element : collection) {
-            final Either<L, R> result = Objects.requireNonNull(mapper.map(element), "mapper returned null");
+            final Either<L, R> result =
+                    Objects.requireNonNull(mapper.map(element), "mapper returned null");
             if (result.isLeft().toBoolean()) {
                 return Either.left(result.fold(Fn::identity, r -> null));
             }
@@ -632,9 +674,8 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
     }
 
     /**
-     * Convert a collection of Either values to an Either of collection.
-     * Stops at first error.
-     * 
+     * Convert a collection of Either values to an Either of collection. Stops at first error.
+     *
      * @param <L> the error type
      * @param <R> the success type
      * @param eithers collection of Either values
@@ -646,7 +687,7 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
 
     /**
      * Partition a collection of Either values into successes and failures.
-     * 
+     *
      * @param <L> the error type
      * @param <R> the success type
      * @param eithers collection of Either values
@@ -655,21 +696,24 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
     static <L, R> Tuple2<List<L>, List<R>> partition(final Collection<Either<L, R>> eithers) {
         List<L> lefts = new ArrayList<>();
         List<R> rights = new ArrayList<>();
-        
+
         for (Either<L, R> either : eithers) {
             either.fold(
-                l -> { lefts.add(l); return null; },
-                r -> { rights.add(r); return null; }
-            );
+                    l -> {
+                        lefts.add(l);
+                        return null;
+                    },
+                    r -> {
+                        rights.add(r);
+                        return null;
+                    });
         }
-        
+
         return new Tuple2<>(lefts, rights);
     }
 
     // ====================== HELPER INTERFACES ======================
 
-    /**
-     * Simple tuple class for holding two values.
-     */
+    /** Simple tuple class for holding two values. */
     record Tuple2<T, U>(T first, U second) {}
 }

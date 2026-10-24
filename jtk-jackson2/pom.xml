@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>eu.infolead.jtk</groupId>
+		<artifactId>jtk-parent</artifactId>
+		<relativePath>../jtk-parent</relativePath>
+		<version>${revision}</version>
+	</parent>
+	<artifactId>jtk-jackson2</artifactId>
+
+	<name>Infolead Java Toolkit - Jackson 2 bridge</name>
+	<description>Jackson 2 integration for applications that have not moved to
+		Jackson 3 yet. Mirrors jtk-jackson3 on the com.fasterxml.jackson API; it is
+		a bridge and is deprecated at release. Jackson 2 and Jackson 3 cannot share
+		serializer code because their databind packages and type names differ.</description>
+
+	<dependencies>
+		<dependency>
+			<groupId>eu.infolead.jtk</groupId>
+			<artifactId>jtk-lang</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+		</dependency>
+	</dependencies>
+</project>

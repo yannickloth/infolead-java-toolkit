@@ -1,37 +1,41 @@
 package eu.infolead.jtk.anomaly;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import eu.infolead.jtk.fp.either.Maybe;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Objects;
 
-import eu.infolead.jtk.fp.either.Maybe;
-
 /**
  * Represents object or system invariant violations.
  *
- * @param invariant   the invariant that was violated
- * @param errorType   the specific invariant error type
+ * @param invariant the invariant that was violated
+ * @param errorType the specific invariant error type
  * @param contextArgs additional arguments for error message formatting
  * @param actualValue the actual value that violated the invariant (optional)
- * @param errorId     unique identifier for this error instance (optional)
+ * @param errorId unique identifier for this error instance (optional)
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record InvariantError(
         String invariant,
         InvariantErrorType errorType,
         Object[] contextArgs,
         @JsonIgnore Maybe<Object> actualValue,
-        @JsonIgnore Maybe<String> errorId) implements SystemError {
+        @JsonIgnore Maybe<String> errorId)
+        implements SystemError {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Canonical constructor with validation.
      *
-     * @param invariant   the invariant that was violated
-     * @param errorType   the specific invariant error type
+     * @param invariant the invariant that was violated
+     * @param errorType the specific invariant error type
      * @param contextArgs additional arguments for message formatting
      * @param actualValue the actual value, if available
-     * @param errorId     the unique error instance identifier, if assigned
+     * @param errorId the unique error instance identifier, if assigned
      */
     public InvariantError {
         Objects.requireNonNull(invariant, "invariant cannot be null");
@@ -55,12 +59,13 @@ public record InvariantError(
     /**
      * Convenience constructor with one message-format argument.
      *
-     * @param invariant  the invariant that was violated
-     * @param errorType  the specific invariant error type
+     * @param invariant the invariant that was violated
+     * @param errorType the specific invariant error type
      * @param contextArg the argument substituted into the message template
      */
-    public InvariantError(final String invariant, final InvariantErrorType errorType, final String contextArg) {
-        this(invariant, errorType, new Object[] { contextArg }, Maybe.none(), Maybe.none());
+    public InvariantError(
+            final String invariant, final InvariantErrorType errorType, final String contextArg) {
+        this(invariant, errorType, new Object[] {contextArg}, Maybe.none(), Maybe.none());
     }
 
     @Override
@@ -74,9 +79,8 @@ public record InvariantError(
     }
 
     /**
-     * Returns the message with the error-type text localized for the requested
-     * language; the invariant name is kept untranslated inside a localized
-     * label.
+     * Returns the message with the error-type text localized for the requested language; the
+     * invariant name is kept untranslated inside a localized label.
      *
      * <pre>{@code
      * InvariantError.objectConsistency("balance")
@@ -89,8 +93,9 @@ public record InvariantError(
      */
     @Override
     public String getLocalizedMessage(final Locale locale) {
-        final String label = ErrorLocalizer.of(locale)
-                .label("error.label.invariant", "Invariant '%s'", invariant);
+        final String label =
+                ErrorLocalizer.of(locale)
+                        .label("error.label.invariant", "Invariant '%s'", invariant);
         return String.format("%s: %s", label, getLocalizedTypeMessage(locale));
     }
 
@@ -124,13 +129,21 @@ public record InvariantError(
         if (errorId.isPresent().toBoolean()) {
             return this;
         }
-        return new InvariantError(invariant, errorType, contextArgs, actualValue,
+        return new InvariantError(
+                invariant,
+                errorType,
+                contextArgs,
+                actualValue,
                 Maybe.some(errorType.generateErrorId()));
     }
 
     @Override
     public SystemError withErrorId(final String customErrorId) {
-        return new InvariantError(invariant, errorType, contextArgs, actualValue,
+        return new InvariantError(
+                invariant,
+                errorType,
+                contextArgs,
+                actualValue,
                 Maybe.some(Objects.requireNonNull(customErrorId, "customErrorId")));
     }
 
@@ -157,11 +170,17 @@ public record InvariantError(
 
     @Override
     public String toString() {
-        return "InvariantError[invariant=" + invariant
-                + ", errorType=" + errorType
-                + ", contextArgs=" + SystemError.renderValue(contextArgs)
-                + ", actualValue=" + actualValue.fold(() -> "none", SystemError::renderValue)
-                + ", errorId=" + errorId + "]";
+        return "InvariantError[invariant="
+                + invariant
+                + ", errorType="
+                + errorType
+                + ", contextArgs="
+                + SystemError.renderValue(contextArgs)
+                + ", actualValue="
+                + actualValue.fold(() -> "none", SystemError::renderValue)
+                + ", errorId="
+                + errorId
+                + "]";
     }
 
     /**
@@ -171,8 +190,12 @@ public record InvariantError(
      * @return the invariant error
      */
     public static InvariantError objectConsistency(final String description) {
-        return new InvariantError("Object consistency", InvariantErrorType.OBJECT_CONSISTENCY,
-                new Object[] { description }, Maybe.none(), Maybe.none());
+        return new InvariantError(
+                "Object consistency",
+                InvariantErrorType.OBJECT_CONSISTENCY,
+                new Object[] {description},
+                Maybe.none(),
+                Maybe.none());
     }
 
     /**
@@ -182,7 +205,36 @@ public record InvariantError(
      * @return the invariant error
      */
     public static InvariantError dataCorruption(final String description) {
-        return new InvariantError("Data integrity", InvariantErrorType.DATA_CORRUPTION,
-                new Object[] { description }, Maybe.none(), Maybe.none());
+        return new InvariantError(
+                "Data integrity",
+                InvariantErrorType.DATA_CORRUPTION,
+                new Object[] {description},
+                Maybe.none(),
+                Maybe.none());
+    }
+
+    /**
+     * Restores the record from its JSON representation.
+     *
+     * <p>The operational members ({@code actualValue}, {@code errorId}) are not part of the wire
+     * contract and are restored as {@link Maybe#none()}. They are reattached by the application
+     * when an error crosses a process boundary.
+     *
+     * @param invariant the invariant
+     * @param errorType the error type
+     * @param contextArgs the message-format arguments
+     * @return the restored error
+     */
+    @JsonCreator
+    public static InvariantError fromJson(
+            @JsonProperty("invariant") final String invariant,
+            @JsonProperty("errorType") final InvariantErrorType errorType,
+            @JsonProperty("contextArgs") final Object[] contextArgs) {
+        return new InvariantError(
+                invariant,
+                errorType,
+                contextArgs == null ? new Object[0] : contextArgs,
+                Maybe.none(),
+                Maybe.none());
     }
 }

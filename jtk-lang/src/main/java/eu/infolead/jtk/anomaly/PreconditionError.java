@@ -1,40 +1,43 @@
 package eu.infolead.jtk.anomaly;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import eu.infolead.jtk.fp.either.Maybe;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Objects;
 
-import eu.infolead.jtk.fp.either.Maybe;
-
 /**
- * Represents precondition errors - system not in correct state for the requested
- * operation. These typically map to HTTP 4xx status codes (client errors) as the
- * client requested an operation that the system cannot perform at this time.
+ * Represents precondition errors - system not in correct state for the requested operation. These
+ * typically map to HTTP 4xx status codes (client errors) as the client requested an operation that
+ * the system cannot perform at this time.
  *
- * @param condition   the precondition that was violated
- * @param errorType   the specific precondition error type
+ * @param condition the precondition that was violated
+ * @param errorType the specific precondition error type
  * @param contextArgs additional arguments for error message formatting
- * @param actualValue the actual system state that violated the precondition
- *                    (optional)
- * @param errorId     unique identifier for this error instance (optional)
+ * @param actualValue the actual system state that violated the precondition (optional)
+ * @param errorId unique identifier for this error instance (optional)
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record PreconditionError(
         String condition,
         PreconditionErrorType errorType,
         Object[] contextArgs,
         @JsonIgnore Maybe<Object> actualValue,
-        @JsonIgnore Maybe<String> errorId) implements SystemError {
+        @JsonIgnore Maybe<String> errorId)
+        implements SystemError {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Canonical constructor with validation.
      *
-     * @param condition   the precondition that was violated
-     * @param errorType   the specific precondition error type
+     * @param condition the precondition that was violated
+     * @param errorType the specific precondition error type
      * @param contextArgs additional arguments for message formatting
      * @param actualValue the actual system state, if available
-     * @param errorId     the unique error instance identifier, if assigned
+     * @param errorId the unique error instance identifier, if assigned
      */
     public PreconditionError {
         Objects.requireNonNull(condition, "condition cannot be null");
@@ -57,15 +60,17 @@ public record PreconditionError(
 
     /**
      * Convenience constructor with context args but no actual value or error ID.
-     * <p>
-     * Every argument is a message-format argument. Use the canonical constructor
-     * when the third argument is the rejected value itself.
      *
-     * @param condition   the precondition that was violated
-     * @param errorType   the specific precondition error type
+     * <p>Every argument is a message-format argument. Use the canonical constructor when the third
+     * argument is the rejected value itself.
+     *
+     * @param condition the precondition that was violated
+     * @param errorType the specific precondition error type
      * @param contextArgs arguments substituted into the message template
      */
-    public PreconditionError(final String condition, final PreconditionErrorType errorType,
+    public PreconditionError(
+            final String condition,
+            final PreconditionErrorType errorType,
             final Object... contextArgs) {
         this(condition, errorType, contextArgs, Maybe.none(), Maybe.none());
     }
@@ -78,10 +83,12 @@ public record PreconditionError(
      * @param actualValue the value that violated the precondition
      * @return the precondition error
      */
-    public static PreconditionError withActualValue(final String condition,
-            final PreconditionErrorType errorType, final Object actualValue) {
-        return new PreconditionError(condition, errorType, new Object[0],
-                Maybe.ofNullable(actualValue), Maybe.none());
+    public static PreconditionError withActualValue(
+            final String condition,
+            final PreconditionErrorType errorType,
+            final Object actualValue) {
+        return new PreconditionError(
+                condition, errorType, new Object[0], Maybe.ofNullable(actualValue), Maybe.none());
     }
 
     @Override
@@ -91,18 +98,14 @@ public record PreconditionError(
 
     @Override
     public String getMessage() {
-        return contextArgs.length == 0
-                ? condition
-                : condition + ": " + getTypeMessage();
+        return contextArgs.length == 0 ? condition : condition + ": " + getTypeMessage();
     }
 
     /**
-     * Returns the message with the error-type text localized for the requested
-     * language.
+     * Returns the message with the error-type text localized for the requested language.
      *
-     * <p>When no context arguments are present, the caller-supplied
-     * {@code condition} is the whole message and is returned untranslated;
-     * there is no error-type text to localize in that case.</p>
+     * <p>When no context arguments are present, the caller-supplied {@code condition} is the whole
+     * message and is returned untranslated; there is no error-type text to localize in that case.
      *
      * <pre>{@code
      * PreconditionError.resourceLocked("order", 42)
@@ -150,13 +153,21 @@ public record PreconditionError(
         if (errorId.isPresent().toBoolean()) {
             return this;
         }
-        return new PreconditionError(condition, errorType, contextArgs, actualValue,
+        return new PreconditionError(
+                condition,
+                errorType,
+                contextArgs,
+                actualValue,
                 Maybe.some(errorType.generateErrorId()));
     }
 
     @Override
     public SystemError withErrorId(final String customErrorId) {
-        return new PreconditionError(condition, errorType, contextArgs, actualValue,
+        return new PreconditionError(
+                condition,
+                errorType,
+                contextArgs,
+                actualValue,
                 Maybe.some(Objects.requireNonNull(customErrorId, "customErrorId")));
     }
 
@@ -183,11 +194,42 @@ public record PreconditionError(
 
     @Override
     public String toString() {
-        return "PreconditionError[condition=" + condition
-                + ", errorType=" + errorType
-                + ", contextArgs=" + SystemError.renderValue(contextArgs)
-                + ", actualValue=" + actualValue.fold(() -> "none", SystemError::renderValue)
-                + ", errorId=" + errorId + "]";
+        return "PreconditionError[condition="
+                + condition
+                + ", errorType="
+                + errorType
+                + ", contextArgs="
+                + SystemError.renderValue(contextArgs)
+                + ", actualValue="
+                + actualValue.fold(() -> "none", SystemError::renderValue)
+                + ", errorId="
+                + errorId
+                + "]";
+    }
+
+    /**
+     * Restores the record from its JSON representation.
+     *
+     * <p>The operational members ({@code actualValue}, {@code errorId}) are not part of the wire
+     * contract and are restored as {@link Maybe#none()}. They are reattached by the application
+     * when an error crosses a process boundary.
+     *
+     * @param condition the precondition that was violated
+     * @param errorType the error type
+     * @param contextArgs the message-format arguments
+     * @return the restored error
+     */
+    @JsonCreator
+    public static PreconditionError fromJson(
+            @JsonProperty("condition") final String condition,
+            @JsonProperty("errorType") final PreconditionErrorType errorType,
+            @JsonProperty("contextArgs") final Object[] contextArgs) {
+        return new PreconditionError(
+                condition,
+                errorType,
+                contextArgs == null ? new Object[0] : contextArgs,
+                Maybe.none(),
+                Maybe.none());
     }
 
     // Factory methods for common precondition errors
@@ -199,8 +241,12 @@ public record PreconditionError(
      * @return the precondition error
      */
     public static PreconditionError systemNotReady(final String reason) {
-        return new PreconditionError("System not ready", PreconditionErrorType.SYSTEM_NOT_READY,
-                new Object[] { reason }, Maybe.none(), Maybe.none());
+        return new PreconditionError(
+                "System not ready",
+                PreconditionErrorType.SYSTEM_NOT_READY,
+                new Object[] {reason},
+                Maybe.none(),
+                Maybe.none());
     }
 
     /**
@@ -210,8 +256,12 @@ public record PreconditionError(
      * @return the precondition error
      */
     public static PreconditionError conflictingState(final String description) {
-        return new PreconditionError("Conflicting state", PreconditionErrorType.CONFLICTING_STATE,
-                new Object[] { description }, Maybe.none(), Maybe.none());
+        return new PreconditionError(
+                "Conflicting state",
+                PreconditionErrorType.CONFLICTING_STATE,
+                new Object[] {description},
+                Maybe.none(),
+                Maybe.none());
     }
 
     /**
@@ -221,32 +271,46 @@ public record PreconditionError(
      * @return the precondition error
      */
     public static PreconditionError insufficientPermissions(final String requirement) {
-        return new PreconditionError("Insufficient permissions", PreconditionErrorType.INSUFFICIENT_PERMISSIONS,
-                new Object[] { requirement }, Maybe.none(), Maybe.none());
+        return new PreconditionError(
+                "Insufficient permissions",
+                PreconditionErrorType.INSUFFICIENT_PERMISSIONS,
+                new Object[] {requirement},
+                Maybe.none(),
+                Maybe.none());
     }
 
     /**
      * Creates a precondition error for resource being locked.
      *
      * @param resourceType the resource type
-     * @param resourceId   the resource identifier
+     * @param resourceId the resource identifier
      * @return the precondition error
      */
-    public static PreconditionError resourceLocked(final String resourceType, final Object resourceId) {
-        return new PreconditionError("Resource locked", PreconditionErrorType.RESOURCE_LOCKED,
-                new Object[] { resourceType, resourceId }, Maybe.none(), Maybe.none());
+    public static PreconditionError resourceLocked(
+            final String resourceType, final Object resourceId) {
+        return new PreconditionError(
+                "Resource locked",
+                PreconditionErrorType.RESOURCE_LOCKED,
+                new Object[] {resourceType, resourceId},
+                Maybe.none(),
+                Maybe.none());
     }
 
     /**
      * Creates a precondition error for operation not allowed in current state.
      *
-     * @param operation    the attempted operation
+     * @param operation the attempted operation
      * @param currentState the current state
      * @return the precondition error
      */
-    public static PreconditionError operationNotAllowed(final String operation, final String currentState) {
-        return new PreconditionError("Operation not allowed", PreconditionErrorType.OPERATION_NOT_ALLOWED,
-                new Object[] { operation, currentState }, Maybe.none(), Maybe.none());
+    public static PreconditionError operationNotAllowed(
+            final String operation, final String currentState) {
+        return new PreconditionError(
+                "Operation not allowed",
+                PreconditionErrorType.OPERATION_NOT_ALLOWED,
+                new Object[] {operation, currentState},
+                Maybe.none(),
+                Maybe.none());
     }
 
     /**
@@ -256,8 +320,12 @@ public record PreconditionError(
      * @return the precondition error
      */
     public static PreconditionError rateLimitExceeded(final String limit) {
-        return new PreconditionError("Rate limit exceeded", PreconditionErrorType.RATE_LIMIT_EXCEEDED,
-                new Object[] { limit }, Maybe.none(), Maybe.none());
+        return new PreconditionError(
+                "Rate limit exceeded",
+                PreconditionErrorType.RATE_LIMIT_EXCEEDED,
+                new Object[] {limit},
+                Maybe.none(),
+                Maybe.none());
     }
 
     /**
@@ -267,7 +335,11 @@ public record PreconditionError(
      * @return the precondition error
      */
     public static PreconditionError maintenanceMode(final String estimatedDuration) {
-        return new PreconditionError("System in maintenance", PreconditionErrorType.MAINTENANCE_MODE,
-                new Object[] { estimatedDuration }, Maybe.none(), Maybe.none());
+        return new PreconditionError(
+                "System in maintenance",
+                PreconditionErrorType.MAINTENANCE_MODE,
+                new Object[] {estimatedDuration},
+                Maybe.none(),
+                Maybe.none());
     }
 }

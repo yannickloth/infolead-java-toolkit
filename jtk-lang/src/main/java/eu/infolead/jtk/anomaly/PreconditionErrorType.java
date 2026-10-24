@@ -1,12 +1,12 @@
 package eu.infolead.jtk.anomaly;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import eu.infolead.jtk.http.HttpStatus;
-
 import java.net.URI;
 
 /**
- * Error types for precondition failures - system not in correct state for operation.
- * These typically map to HTTP 4xx status codes (client errors).
+ * Error types for precondition failures - system not in correct state for operation. These
+ * typically map to HTTP 4xx status codes (client errors).
  *
  * <pre>{@code
  * PreconditionError error = PreconditionError.rateLimitExceeded("100/min");
@@ -21,93 +21,84 @@ public enum PreconditionErrorType implements ErrorType {
 
     /** The system is not ready for the operation. */
     SYSTEM_NOT_READY(
-        2001,
-        "SYSTEM_NOT_READY",
-        "System is not ready: %s",
-            HttpStatus.SERVICE_UNAVAILABLE.code(),  // Service Unavailable
-        "Service Unavailable - System Not Ready",
-        ErrorCategory.SYSTEM
-    ),
+            2001,
+            "SYSTEM_NOT_READY",
+            "System is not ready: %s",
+            HttpStatus.SERVICE_UNAVAILABLE.code(), // Service Unavailable
+            "Service Unavailable - System Not Ready",
+            ErrorCategory.SYSTEM),
 
     /** The operation conflicts with the current state. */
     CONFLICTING_STATE(
-        2002,
-        "CONFLICTING_STATE",
-        "Operation conflicts with current state: %s",
-            HttpStatus.CONFLICT.code(),  // Conflict
-        "Conflict - Conflicting State",
-        ErrorCategory.BUSINESS_LOGIC
-    ),
+            2002,
+            "CONFLICTING_STATE",
+            "Operation conflicts with current state: %s",
+            HttpStatus.CONFLICT.code(), // Conflict
+            "Conflict - Conflicting State",
+            ErrorCategory.BUSINESS_LOGIC),
 
     /** The caller lacks a required permission. */
     INSUFFICIENT_PERMISSIONS(
-        2003,
-        "INSUFFICIENT_PERMISSIONS",
-        "Insufficient permissions: %s required",
-            HttpStatus.FORBIDDEN.code(),  // Forbidden
-        "Forbidden - Insufficient Permissions",
-        ErrorCategory.SECURITY
-    ),
+            2003,
+            "INSUFFICIENT_PERMISSIONS",
+            "Insufficient permissions: %s required",
+            HttpStatus.FORBIDDEN.code(), // Forbidden
+            "Forbidden - Insufficient Permissions",
+            ErrorCategory.SECURITY),
 
     /** The resource is currently locked. */
     RESOURCE_LOCKED(
-        2004,
-        "RESOURCE_LOCKED",
-        "%s %s is currently locked",
-            HttpStatus.LOCKED.code(),  // Locked
-        "Locked - Resource Unavailable",
-        ErrorCategory.RESOURCE
-    ),
+            2004,
+            "RESOURCE_LOCKED",
+            "%s %s is currently locked",
+            HttpStatus.LOCKED.code(), // Locked
+            "Locked - Resource Unavailable",
+            ErrorCategory.RESOURCE),
 
     /** The operation is not allowed in the current state. */
     OPERATION_NOT_ALLOWED(
-        2005,
-        "OPERATION_NOT_ALLOWED",
-        "Operation '%s' not allowed in state '%s'",
-            HttpStatus.METHOD_NOT_ALLOWED.code(),  // Method Not Allowed
-        "Method Not Allowed - Operation Not Permitted",
-        ErrorCategory.BUSINESS_LOGIC
-    ),
+            2005,
+            "OPERATION_NOT_ALLOWED",
+            "Operation '%s' not allowed in state '%s'",
+            HttpStatus.METHOD_NOT_ALLOWED.code(), // Method Not Allowed
+            "Method Not Allowed - Operation Not Permitted",
+            ErrorCategory.BUSINESS_LOGIC),
 
     /** A rate limit was exceeded. */
     RATE_LIMIT_EXCEEDED(
-        2006,
-        "RATE_LIMIT_EXCEEDED",
-        "Rate limit exceeded: %s",
-            HttpStatus.TOO_MANY_REQUESTS.code(),  // Too Many Requests
-        "Too Many Requests - Rate Limit Exceeded",
-        ErrorCategory.RATE_LIMIT
-    ),
+            2006,
+            "RATE_LIMIT_EXCEEDED",
+            "Rate limit exceeded: %s",
+            HttpStatus.TOO_MANY_REQUESTS.code(), // Too Many Requests
+            "Too Many Requests - Rate Limit Exceeded",
+            ErrorCategory.RATE_LIMIT),
 
     /** The system is in maintenance mode. */
     MAINTENANCE_MODE(
-        2007,
-        "MAINTENANCE_MODE",
-        "System in maintenance mode (estimated duration: %s)",
-            HttpStatus.SERVICE_UNAVAILABLE.code(),  // Service Unavailable
-        "Service Unavailable - Maintenance Mode",
-        ErrorCategory.SYSTEM
-    ),
+            2007,
+            "MAINTENANCE_MODE",
+            "System in maintenance mode (estimated duration: %s)",
+            HttpStatus.SERVICE_UNAVAILABLE.code(), // Service Unavailable
+            "Service Unavailable - Maintenance Mode",
+            ErrorCategory.SYSTEM),
 
     /** A required dependency is unavailable. */
     DEPENDENCY_UNAVAILABLE(
-        2008,
-        "DEPENDENCY_UNAVAILABLE",
-        "Required dependency unavailable: %s",
-            HttpStatus.BAD_GATEWAY.code(),  // Bad Gateway
-        "Bad Gateway - Dependency Unavailable",
-        ErrorCategory.EXTERNAL_SERVICE
-    ),
+            2008,
+            "DEPENDENCY_UNAVAILABLE",
+            "Required dependency unavailable: %s",
+            HttpStatus.BAD_GATEWAY.code(), // Bad Gateway
+            "Bad Gateway - Dependency Unavailable",
+            ErrorCategory.EXTERNAL_SERVICE),
 
     /** A precondition failed. */
     PRECONDITION_FAILED(
-        2009,
-        "PRECONDITION_FAILED",
-        "Precondition failed: %s",
-            HttpStatus.PRECONDITION_FAILED.code(),  // Precondition Failed
-        "Precondition Failed",
-        ErrorCategory.BUSINESS_LOGIC
-    );
+            2009,
+            "PRECONDITION_FAILED",
+            "Precondition failed: %s",
+            HttpStatus.PRECONDITION_FAILED.code(), // Precondition Failed
+            "Precondition Failed",
+            ErrorCategory.BUSINESS_LOGIC);
 
     private final int typeNumber;
     private final String code;
@@ -117,8 +108,13 @@ public enum PreconditionErrorType implements ErrorType {
     private final String problemTitle;
     private final ErrorCategory category;
 
-    PreconditionErrorType(int typeNumber, String code, String messageTemplate, int httpStatus,
-                         String problemTitle, ErrorCategory category) {
+    PreconditionErrorType(
+            int typeNumber,
+            String code,
+            String messageTemplate,
+            int httpStatus,
+            String problemTitle,
+            ErrorCategory category) {
         this.typeNumber = typeNumber;
         this.code = code;
         this.messageTemplate = messageTemplate;
@@ -161,5 +157,23 @@ public enum PreconditionErrorType implements ErrorType {
     @Override
     public ErrorCategory getCategory() {
         return category;
+    }
+
+    /**
+     * Reads the enum constant from its stable message key, which is also the JSON representation
+     * written by {@code ErrorType#getMessageKey()}.
+     *
+     * @param code the stable message key
+     * @return the matching constant
+     * @throws IllegalArgumentException if the code is unknown
+     */
+    @JsonCreator
+    static PreconditionErrorType fromJson(final String code) {
+        for (final PreconditionErrorType value : values()) {
+            if (value.getMessageKey().equals(code)) {
+                return value;
+            }
+        }
+        throw new IllegalArgumentException("Unknown PreconditionErrorType code: " + code);
     }
 }

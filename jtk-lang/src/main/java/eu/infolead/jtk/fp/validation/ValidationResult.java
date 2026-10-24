@@ -1,5 +1,17 @@
 package eu.infolead.jtk.fp.validation;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import eu.infolead.jtk.anomaly.ErrorType;
+import eu.infolead.jtk.anomaly.http.ProblemDetail;
+import eu.infolead.jtk.anomaly.http.StandardProblemDetail;
+import eu.infolead.jtk.fp.either.Either;
+import eu.infolead.jtk.fp.either.Maybe;
+import eu.infolead.jtk.fp.either.Result;
+import eu.infolead.jtk.fp.either.Validation;
+import eu.infolead.jtk.http.HttpStatusCode;
+import eu.infolead.jtk.logic.Bool;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,33 +23,57 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import eu.infolead.jtk.anomaly.ErrorType;
-import eu.infolead.jtk.anomaly.http.ProblemDetail;
-import eu.infolead.jtk.anomaly.http.StandardProblemDetail;
-import eu.infolead.jtk.fp.either.Either;
-import eu.infolead.jtk.fp.either.Maybe;
-import eu.infolead.jtk.fp.either.Result;
-import eu.infolead.jtk.fp.either.Validation;
-import eu.infolead.jtk.http.HttpStatusCode;
-import eu.infolead.jtk.logic.Bool;
-
 /**
- * A validation result that can accumulate multiple validation errors.
- * Unlike the basic Validation interface which short-circuits on first error,
- * ValidationResult collects all validation errors for comprehensive reporting.
+ * A validation result that can accumulate multiple validation errors. Unlike the basic Validation
+ * interface which short-circuits on first error, ValidationResult collects all validation errors
+ * for comprehensive reporting.
  *
  * @param <T> the type of the valid value
  */
-public sealed interface ValidationResult<T> permits ValidationResult.Success, ValidationResult.Failure {
+public sealed interface ValidationResult<T> extends java.io.Serializable
+        permits ValidationResult.Success, ValidationResult.Failure {
+
+    /**
+     * Reads the aggregation from its canonical record shape.
+     *
+     * <p>The aggregation uses the same envelope as the {@code Either} family: a success is written
+     * as {@code {"right": value}} and a failure as {@code {"left": [errors]}}, where {@code left}
+     * holds the accumulated errors. An empty or absent error list means success, because {@link
+     * Failure} rejects an empty list by contract.
+     *
+     * @param <T> the valid-value type
+     * @param errors the accumulated errors, or {@code null} for a success
+     * @param value the valid value, or {@code null} for a failure
+     * @return the aggregation
+     * @throws IllegalArgumentException if neither a value nor errors are present
+     */
+    @JsonCreator
+    static <T> ValidationResult<T> fromJson(
+            @JsonProperty("left") final List<ValidationError> errors,
+            @JsonProperty("right") final T value) {
+        if (errors != null && !errors.isEmpty()) {
+            if (value != null) {
+                throw new IllegalArgumentException(
+                        "A ValidationResult envelope cannot carry both 'left' and 'right'");
+            }
+            return ValidationResult.failure(errors);
+        }
+        if (value == null) {
+            throw new IllegalArgumentException(
+                    "A ValidationResult JSON envelope needs a 'right' value or a non-empty 'left'");
+        }
+        return ValidationResult.success(value);
+    }
 
     /** Default problem type URI for aggregated validation errors. */
-    URI DEFAULT_PROBLEM_TYPE = ErrorType.problemType(
-            ErrorType.ErrorCategory.VALIDATION, "validation-result", "validation-error");
+    URI DEFAULT_PROBLEM_TYPE =
+            ErrorType.problemType(
+                    ErrorType.ErrorCategory.VALIDATION, "validation-result", "validation-error");
 
     /**
      * Creates a successful validation result.
      *
-     * @param <T>   the type of the valid value
+     * @param <T> the type of the valid value
      * @param value the valid value; must not be {@code null}
      * @return a successful ValidationResult
      * @throws NullPointerException if {@code value} is {@code null}
@@ -49,7 +85,7 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
     /**
      * Creates a failed validation result with a single error.
      *
-     * @param <T>   the type that would be valid
+     * @param <T> the type that would be valid
      * @param error the validation error; must not be {@code null}
      * @return a failed ValidationResult
      * @throws NullPointerException if {@code error} is {@code null}
@@ -61,7 +97,7 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
     /**
      * Creates a failed validation result with multiple errors.
      *
-     * @param <T>    the type that would be valid
+     * @param <T> the type that would be valid
      * @param errors the validation errors; must not be null or empty
      * @return a failed ValidationResult
      * @throws IllegalArgumentException if {@code errors} is empty
@@ -77,7 +113,7 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
     /**
      * Creates a failed validation result with multiple errors.
      *
-     * @param <T>    the type that would be valid
+     * @param <T> the type that would be valid
      * @param errors the validation errors; must not be null or empty
      * @return a failed ValidationResult
      * @throws IllegalArgumentException if {@code errors} is empty
@@ -91,19 +127,18 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
     /**
      * Converts a simple Validation to a ValidationResult.
      *
-     * @param <E>         the invalid value type
-     * @param <T>         the type of the valid value
-     * @param validation  the validation to convert
+     * @param <E> the invalid value type
+     * @param <T> the type of the valid value
+     * @param validation the validation to convert
      * @param errorMapper function to convert the error to ValidationError
      * @return a ValidationResult
      */
-    static <E, T> ValidationResult<T> from(final Validation<E, T> validation,
-            final Function<E, ValidationError> errorMapper) {
+    static <E, T> ValidationResult<T> from(
+            final Validation<E, T> validation, final Function<E, ValidationError> errorMapper) {
         Objects.requireNonNull(validation, "validation");
         Objects.requireNonNull(errorMapper, "errorMapper");
         return validation.fold(
-                error -> failure(errorMapper.apply(error)),
-                ValidationResult::success);
+                error -> failure(errorMapper.apply(error)), ValidationResult::success);
     }
 
     /**
@@ -127,6 +162,7 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
      *
      * @return the valid value or an empty Maybe
      */
+    @JsonIgnore
     Maybe<T> getValue();
 
     /**
@@ -134,40 +170,41 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
      *
      * @return list of validation errors
      */
+    @JsonIgnore
     List<ValidationError> getErrors();
 
     /**
      * Transforms the value if successful, preserving errors if failed.
      *
-     * @param <U>    the new value type
+     * @param <U> the new value type
      * @param mapper the transformation function
      * @return a new ValidationResult with transformed value
      */
     <U> ValidationResult<U> map(Function<T, U> mapper);
 
     /**
-     * Applies a validation function that may add more errors.
-     * This allows chaining validations while accumulating all errors.
+     * Applies a validation function that may add more errors. This allows chaining validations
+     * while accumulating all errors.
      *
-     * @param <U>       the new value type
+     * @param <U> the new value type
      * @param validator the validation function
      * @return a new ValidationResult with accumulated errors
      */
     <U> ValidationResult<U> flatMap(Function<T, ValidationResult<U>> validator);
 
     /**
-     * Combines this result with another, accumulating both values and errors.
-     * If both are successful, combines values using the combiner function.
-     * If either fails, accumulates all errors.
+     * Combines this result with another, accumulating both values and errors. If both are
+     * successful, combines values using the combiner function. If either fails, accumulates all
+     * errors.
      *
-     * @param <U>      the type of the other value
-     * @param <R>      the type of the combined result
-     * @param other    the other validation result
+     * @param <U> the type of the other value
+     * @param <R> the type of the combined result
+     * @param other the other validation result
      * @param combiner function to combine successful values
      * @return combined ValidationResult
      */
-    <U, R> ValidationResult<R> combine(ValidationResult<U> other,
-            Function<T, Function<U, R>> combiner);
+    <U, R> ValidationResult<R> combine(
+            ValidationResult<U> other, Function<T, Function<U, R>> combiner);
 
     /**
      * Applies additional validation if this result is successful.
@@ -181,7 +218,7 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
      * Applies a predicate validation with custom error.
      *
      * @param predicate the validation predicate
-     * @param error     the error to add if predicate fails
+     * @param error the error to add if predicate fails
      * @return this result with predicate validation applied
      */
     ValidationResult<T> validateThat(Predicate<T> predicate, ValidationError error);
@@ -203,17 +240,16 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
     /**
      * Converts to a railway {@link Result}.
      *
-     * <p>A {@link Result} carries a single failure, so only the first error is
-     * kept. Use {@link #getErrors()} or {@link #toValidation()} when every
-     * accumulated error must be inspected.</p>
+     * <p>A {@link Result} carries a single failure, so only the first error is kept. Use {@link
+     * #getErrors()} or {@link #toValidation()} when every accumulated error must be inspected.
      *
      * <pre>{@code
      * Result<ValidationError, User> result = validationResult.toResult();
      * User user = result.fold(error -> report(error), value -> value);
      * }</pre>
      *
-     * @return a successful result with the valid value, or a failure with the
-     *         first validation error
+     * @return a successful result with the valid value, or a failure with the first validation
+     *     error
      */
     default Result<ValidationError, T> toResult() {
         return isSuccess().toBoolean()
@@ -225,12 +261,13 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
      * Converts validation errors to a ProblemDetail for HTTP API responses.
      *
      * @param problemType the problem type URI
-     * @param title       the problem title
-     * @param status      the HTTP status code, or {@code null} to omit it
+     * @param title the problem title
+     * @param status the HTTP status code, or {@code null} to omit it
      * @return a ProblemDetail representing the validation errors
      * @throws IllegalStateException if this result is successful
      */
-    default ProblemDetail toProblemDetail(final URI problemType, final String title, final Integer status) {
+    default ProblemDetail toProblemDetail(
+            final URI problemType, final String title, final Integer status) {
         Objects.requireNonNull(problemType, "problemType");
         Objects.requireNonNull(title, "title");
         if (isSuccess().toBoolean()) {
@@ -240,9 +277,8 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
             throw new IllegalArgumentException("Invalid HTTP status code: " + status);
         }
 
-        final String detail = getErrors().stream()
-                .map(ValidationError::format)
-                .collect(Collectors.joining("; "));
+        final String detail =
+                getErrors().stream().map(ValidationError::format).collect(Collectors.joining("; "));
 
         return StandardProblemDetail.builder(problemType)
                 .title(title)
@@ -252,8 +288,7 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
     }
 
     /**
-     * Converts validation errors to a ProblemDetail with default validation
-     * error type.
+     * Converts validation errors to a ProblemDetail with default validation error type.
      *
      * @param status the HTTP status code (typically 400 for validation errors)
      * @return a ProblemDetail representing the validation errors
@@ -263,8 +298,7 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
     }
 
     /**
-     * Converts validation errors to a ProblemDetail with 400 Bad Request
-     * status.
+     * Converts validation errors to a ProblemDetail with 400 Bad Request status.
      *
      * @return a ProblemDetail representing the validation errors
      */
@@ -273,9 +307,8 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
     }
 
     /**
-     * Converts validation errors to a ProblemDetail using the first error's type
-     * information. This preserves the HTTP status and problem type from the
-     * ErrorType enum.
+     * Converts validation errors to a ProblemDetail using the first error's type information. This
+     * preserves the HTTP status and problem type from the ErrorType enum.
      *
      * @return a ProblemDetail representing the validation errors
      */
@@ -285,34 +318,31 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
         }
         final List<ValidationError> errors = getErrors();
         final ValidationError firstError = errors.get(0);
-        final String detail = errors.stream()
-                .map(ValidationError::format)
-                .collect(Collectors.joining("; "));
+        final String detail =
+                errors.stream().map(ValidationError::format).collect(Collectors.joining("; "));
 
         return firstError.errorType().toProblemDetail(detail);
     }
 
     /**
-     * Groups validation errors by their HTTP status codes.
-     * Useful when multiple error types with different status codes are present.
+     * Groups validation errors by their HTTP status codes. Useful when multiple error types with
+     * different status codes are present.
      *
      * @return a map of HTTP status codes to lists of validation errors
      */
     default Map<Integer, List<ValidationError>> groupByHttpStatus() {
-        return getErrors().stream()
-                .collect(Collectors.groupingBy(ValidationError::getHttpStatus));
+        return getErrors().stream().collect(Collectors.groupingBy(ValidationError::getHttpStatus));
     }
 
     /**
-     * Checks if this result failed and all validation errors are client errors
-     * (4xx status codes). A successful result returns {@code false}, matching
-     * {@link #hasServerErrors()}.
+     * Checks if this result failed and all validation errors are client errors (4xx status codes).
+     * A successful result returns {@code false}, matching {@link #hasServerErrors()}.
      *
      * @return true if this result failed and all errors are client errors
      */
     default boolean areAllClientErrors() {
-        return !isSuccess().toBoolean() && getErrors().stream()
-                .allMatch(error -> error.errorType().isClientError());
+        return !isSuccess().toBoolean()
+                && getErrors().stream().allMatch(error -> error.errorType().isClientError());
     }
 
     /**
@@ -321,17 +351,16 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
      * @return true if any error is a server error, false otherwise
      */
     default boolean hasServerErrors() {
-        return getErrors().stream()
-                .anyMatch(error -> error.errorType().isServerError());
+        return getErrors().stream().anyMatch(error -> error.errorType().isServerError());
     }
 
     /**
      * Successful validation result.
      *
      * @param value the validated value
-     * @param <T>   the value type
+     * @param <T> the value type
      */
-    record Success<T>(T value) implements ValidationResult<T> {
+    record Success<T>(@JsonProperty("right") T value) implements ValidationResult<T> {
         /**
          * Compact constructor rejecting a null valid value.
          *
@@ -370,12 +399,15 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
         }
 
         @Override
-        public <U, R> ValidationResult<R> combine(final ValidationResult<U> other,
-                final Function<T, Function<U, R>> combiner) {
+        public <U, R> ValidationResult<R> combine(
+                final ValidationResult<U> other, final Function<T, Function<U, R>> combiner) {
             Objects.requireNonNull(other, "other");
             Objects.requireNonNull(combiner, "combiner");
-            return other.map(otherValue -> Objects.requireNonNull(
-                    combiner.apply(value).apply(otherValue), "combiner returned null"));
+            return other.map(
+                    otherValue ->
+                            Objects.requireNonNull(
+                                    combiner.apply(value).apply(otherValue),
+                                    "combiner returned null"));
         }
 
         @Override
@@ -385,7 +417,8 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
         }
 
         @Override
-        public ValidationResult<T> validateThat(final Predicate<T> predicate, final ValidationError error) {
+        public ValidationResult<T> validateThat(
+                final Predicate<T> predicate, final ValidationError error) {
             Objects.requireNonNull(predicate, "predicate");
             Objects.requireNonNull(error, "error");
             return predicate.test(value) ? this : failure(error);
@@ -406,15 +439,16 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
      * Failed validation result with accumulated errors.
      *
      * @param errors the accumulated errors
-     * @param <T>    the value type that would have been valid
+     * @param <T> the value type that would have been valid
      */
-    record Failure<T>(List<ValidationError> errors) implements ValidationResult<T> {
+    record Failure<T>(@JsonProperty("left") List<ValidationError> errors)
+            implements ValidationResult<T> {
         /**
          * Compact constructor enforcing a non-empty, immutable error list.
          *
          * @param errors the accumulated errors; must not be null or empty
          * @throws IllegalArgumentException if {@code errors} is empty
-         * @throws NullPointerException     if {@code errors} is {@code null}
+         * @throws NullPointerException if {@code errors} is {@code null}
          */
         public Failure {
             Objects.requireNonNull(errors, "errors cannot be null");
@@ -452,8 +486,8 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
         }
 
         @Override
-        public <U, R> ValidationResult<R> combine(final ValidationResult<U> other,
-                final Function<T, Function<U, R>> combiner) {
+        public <U, R> ValidationResult<R> combine(
+                final ValidationResult<U> other, final Function<T, Function<U, R>> combiner) {
             Objects.requireNonNull(other, "other");
             Objects.requireNonNull(combiner, "combiner");
             final List<ValidationError> combinedErrors = new ArrayList<>(errors);
@@ -468,7 +502,8 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
         }
 
         @Override
-        public ValidationResult<T> validateThat(final Predicate<T> predicate, final ValidationError error) {
+        public ValidationResult<T> validateThat(
+                final Predicate<T> predicate, final ValidationError error) {
             Objects.requireNonNull(predicate, "predicate");
             Objects.requireNonNull(error, "error");
             return this;
@@ -476,9 +511,8 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
 
         @Override
         public Either<String, T> toEither() {
-            final String errorMessage = errors.stream()
-                    .map(ValidationError::format)
-                    .collect(Collectors.joining("; "));
+            final String errorMessage =
+                    errors.stream().map(ValidationError::format).collect(Collectors.joining("; "));
             return Either.left(errorMessage);
         }
 
@@ -491,7 +525,7 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
     /**
      * Combines multiple ValidationResults, accumulating all errors.
      *
-     * @param <T>     the type of the results
+     * @param <T> the type of the results
      * @param results the results to combine
      * @return a list of all successful values, or accumulated errors
      */
@@ -515,19 +549,23 @@ public sealed interface ValidationResult<T> permits ValidationResult.Success, Va
     /**
      * Validates all items in a collection, accumulating errors.
      *
-     * @param <T>       the item type
-     * @param <U>       the validated type
-     * @param items     the items to validate
+     * @param <T> the item type
+     * @param <U> the validated type
+     * @param items the items to validate
      * @param validator the validation function
      * @return ValidationResult with all validated items or accumulated errors
      */
-    static <T, U> ValidationResult<List<U>> validateAll(final Collection<T> items,
-            final Function<T, ValidationResult<U>> validator) {
+    static <T, U> ValidationResult<List<U>> validateAll(
+            final Collection<T> items, final Function<T, ValidationResult<U>> validator) {
         Objects.requireNonNull(items, "items");
         Objects.requireNonNull(validator, "validator");
-        final List<ValidationResult<U>> results = items.stream()
-                .map(item -> Objects.requireNonNull(validator.apply(item), "validator returned null"))
-                .collect(Collectors.toList());
+        final List<ValidationResult<U>> results =
+                items.stream()
+                        .map(
+                                item ->
+                                        Objects.requireNonNull(
+                                                validator.apply(item), "validator returned null"))
+                        .collect(Collectors.toList());
         return sequence(results);
     }
 }

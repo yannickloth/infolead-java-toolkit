@@ -11,9 +11,9 @@ This is the **Infolead Java Toolkit**, a modular Maven project providing functio
 - **jtk-lang**: Core functional programming types (Either, Maybe, Result, TailCall), HTTP utilities, RFC references, and core functionality
 - **jtk-async**: Asynchronous railway: CompletableFuture/Result bridging, bounded parallel traversal, deadlines, retries and cancellation
 - **jtk-currency**: Currency-related utilities
-- **jtk-jackson3**: Jackson 3 integration; depends on jtk-lang only, no framework dependency
-- **jtk-jackson2**: Jackson 2 bridge mirroring jtk-jackson3 on the `com.fasterxml.jackson` API (deprecated at release)
-- **jtk-spring-autoconfigure**: Spring Boot auto-configuration for the Jackson module and the RFC 9457 problem+json bridge; the only framework-dependent artifact
+- **jtk-jackson3**: Jackson 3 integration; depends on jtk-lang only, no framework dependency. JPMS module name: `eu.infolead.jtk.jackson.v3`
+- **jtk-jackson2**: Jackson 2 bridge mirroring jtk-jackson3 on the `com.fasterxml.jackson` API (deprecated at release). JPMS module name: `eu.infolead.jtk.jackson.v2`
+- **jtk-spring-autoconfigure**: Spring Boot auto-configuration for the Jackson module and the RFC 9457 problem+json bridge; the only framework-dependent artifact. Classpath-only (no `module-info.java`) because Spring Boot autoconfiguration is not module-friendly
 - **jtk-test**: Test support library: AssertJ assertions for jtk types, deterministic anomaly fixtures, jqwik arbitraries and serialization round-trip helpers; hosts the toolkit's own law conformance suite. Consumers declare it with test scope only
 
 ### Key Design Patterns
@@ -56,6 +56,8 @@ nix-shell
 ### Verification
 - `./mvnw verify` runs the tests, the Spotless check, JaCoCo reporting, and the Maven enforcer
 - Spotless enforces google-java-format (AOSP style) on files changed relative to `origin/main`; fix violations with `./mvnw spotless:apply`
+- JaCoCo LINE coverage gate is set to `0.70` for every published module
+- Javadoc is built with `doclint` set to `all,-missing`; release dry-run with `./mvnw clean verify -Prelease -Dgpg.skip=true`
 - The OpenCode slash commands `/verify`, `/test`, and `/format` wrap these flows (defined in `.opencode/commands/`)
 
 ## Code Conventions

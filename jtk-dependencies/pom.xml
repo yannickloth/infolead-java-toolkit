@@ -3,40 +3,53 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>eu.infolead.javatoolkit</groupId>
-	<artifactId>jtk-dependencies</artifactId>
-	<version>0.0.1</version>
+	<parent>
+		<groupId>eu.infolead.jtk</groupId>
+		<artifactId>jtk-root</artifactId>
+		<relativePath>../pom.xml</relativePath>
+		<version>${revision}</version>
+	</parent>
+	<artifactId>jtk-bom</artifactId>
 	<packaging>pom</packaging>
-	<name>Infolead Java toolkit - Dependencies</name>
-	<description>Infolead Java toolkit - Dependencies module</description>
-	<properties>
-		<jackson.version>2.22.4</jackson.version>
-		<spring-boot.version>3.5.16</spring-boot.version>
-	</properties>
+	<name>Infolead Java Toolkit - BOM</name>
+	<description>Bill of Materials for Infolead Java Toolkit artifacts</description>
+
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
-				<groupId>eu.infolead.javatoolkit</groupId>
+				<groupId>eu.infolead.jtk</groupId>
 				<artifactId>jtk-lang</artifactId>
-				<scope>compile</scope>
 				<version>${project.version}</version>
 			</dependency>
-			<!-- Deliberately newer than Spring Boot's managed Jackson: this BOM is
-			     imported first so the explicit version wins. Remove the pin when the
-			     Spring Boot baseline catches up. -->
 			<dependency>
-				<groupId>com.fasterxml.jackson</groupId>
-				<artifactId>jackson-bom</artifactId>
-				<version>${jackson.version}</version>
-				<scope>import</scope>
-				<type>pom</type>
+				<groupId>eu.infolead.jtk</groupId>
+				<artifactId>jtk-async</artifactId>
+				<version>${project.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-dependencies</artifactId>
-				<version>${spring-boot.version}</version>
-				<scope>import</scope>
-				<type>pom</type>
+				<groupId>eu.infolead.jtk</groupId>
+				<artifactId>jtk-currency</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>eu.infolead.jtk</groupId>
+				<artifactId>jtk-jackson2</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>eu.infolead.jtk</groupId>
+				<artifactId>jtk-jackson3</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>eu.infolead.jtk</groupId>
+				<artifactId>jtk-test</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>eu.infolead.jtk</groupId>
+				<artifactId>jtk-spring-autoconfigure</artifactId>
+				<version>${project.version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

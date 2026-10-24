@@ -4,53 +4,53 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import eu.infolead.jtk.anomaly.Sensitive;
+import eu.infolead.jtk.fp.either.Maybe;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-
 import org.junit.jupiter.api.Test;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import eu.infolead.jtk.anomaly.Sensitive;
-import eu.infolead.jtk.fp.either.Maybe;
+import tools.jackson.databind.json.JsonMapper;
 
 class ProblemDetailJsonTest {
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final JsonMapper mapper = JsonMapper.builder().build();
 
     @Test
     void standardProblemDetailRoundTripsAndToleratesExtensions() throws Exception {
-        final StandardProblemDetail detail = new StandardProblemDetail(
-                URI.create("https://errors.infolead.eu/problems/validation/parameter"),
-                Maybe.some("Bad Request"),
-                Maybe.some(400),
-                Maybe.some("parameter is invalid"),
-                Maybe.none());
+        final StandardProblemDetail detail =
+                new StandardProblemDetail(
+                        URI.create("https://errors.infolead.eu/problems/validation/parameter"),
+                        Maybe.some("Bad Request"),
+                        Maybe.some(400),
+                        Maybe.some("parameter is invalid"),
+                        Maybe.none());
 
         final String json = mapper.writeValueAsString(detail);
         assertTrue(json.contains("\"type\""));
         assertTrue(json.contains("\"status\":400"));
 
-        final StandardProblemDetail parsed = mapper.readValue(
-                "{\"title\":\"Bad Request\",\"status\":400,\"detail\":\"invalid\",\"extension\":true}",
-                StandardProblemDetail.class);
+        final StandardProblemDetail parsed =
+                mapper.readValue(
+                        "{\"title\":\"Bad Request\",\"status\":400,\"detail\":\"invalid\",\"extension\":true}",
+                        StandardProblemDetail.class);
         assertEquals(URI.create("about:blank"), parsed.getProblemType());
     }
 
     @Test
     void operationalExtensionsRoundTripThroughJson() throws Exception {
-        final StandardProblemDetail detail = StandardProblemDetail.builder(URI.create("about:blank"))
-                .title("Too Many Requests")
-                .status(429)
-                .detail("slow down")
-                .correlationId("corr-1")
-                .traceId("trace-1")
-                .requestId("req-1")
-                .tenantId("tenant-1")
-                .retryable(true)
-                .retryAfterSeconds(3L)
-                .build();
+        final StandardProblemDetail detail =
+                StandardProblemDetail.builder(URI.create("about:blank"))
+                        .title("Too Many Requests")
+                        .status(429)
+                        .detail("slow down")
+                        .correlationId("corr-1")
+                        .traceId("trace-1")
+                        .requestId("req-1")
+                        .tenantId("tenant-1")
+                        .retryable(true)
+                        .retryAfterSeconds(3L)
+                        .build();
 
         final String json = mapper.writeValueAsString(detail);
         assertTrue(json.contains("\"correlationId\":\"corr-1\""));
@@ -71,23 +71,23 @@ class ProblemDetailJsonTest {
 
     @Test
     void sensitiveValuesSerializeAsRedactedStrings() throws Exception {
-        assertEquals("\"[REDACTED]\"",
-                mapper.writeValueAsString(Sensitive.of("hunter2")));
-        final String json = mapper.writeValueAsString(
-                Map.of("password", Sensitive.of("hunter2")));
+        assertEquals("\"[REDACTED]\"", mapper.writeValueAsString(Sensitive.of("hunter2")));
+        final String json = mapper.writeValueAsString(Map.of("password", Sensitive.of("hunter2")));
         assertFalse(json.contains("hunter2"));
         assertTrue(json.contains("[REDACTED]"));
     }
 
     @Test
     void coreMembersSerializeAndRoundTripThroughJson() throws Exception {
-        final StandardProblemDetail detail = StandardProblemDetail.builder(
-                URI.create("https://errors.infolead.eu/problems/validation/standard"))
-                .title("Bad Request")
-                .status(400)
-                .detail("field userId is invalid")
-                .instance(URI.create("/requests/42"))
-                .build();
+        final StandardProblemDetail detail =
+                StandardProblemDetail.builder(
+                                URI.create(
+                                        "https://errors.infolead.eu/problems/validation/standard"))
+                        .title("Bad Request")
+                        .status(400)
+                        .detail("field userId is invalid")
+                        .instance(URI.create("/requests/42"))
+                        .build();
 
         final String json = mapper.writeValueAsString(detail);
         assertTrue(json.contains("\"title\":\"Bad Request\""), json);
@@ -103,8 +103,9 @@ class ProblemDetailJsonTest {
 
     @Test
     void emptyCoreMembersAreOmittedFromJson() throws Exception {
-        final String json = mapper.writeValueAsString(
-                StandardProblemDetail.aboutBlank(503, java.util.Locale.ENGLISH));
+        final String json =
+                mapper.writeValueAsString(
+                        StandardProblemDetail.aboutBlank(503, java.util.Locale.ENGLISH));
         assertTrue(json.contains("\"title\""));
         assertFalse(json.contains("\"detail\""));
         assertFalse(json.contains("\"instance\""));
@@ -113,13 +114,14 @@ class ProblemDetailJsonTest {
 
     @Test
     void multiStatusUsesTheWrappedResponseShape() throws Exception {
-        final StandardMultiStatusProblemDetail detail = new StandardMultiStatusProblemDetail(
-                URI.create("about:blank"),
-                Maybe.none(),
-                Maybe.some(207),
-                Maybe.none(),
-                Maybe.none(),
-                List.of(new MultiStatusResponseElement(URI.create("/resource"), 423)));
+        final StandardMultiStatusProblemDetail detail =
+                new StandardMultiStatusProblemDetail(
+                        URI.create("about:blank"),
+                        Maybe.none(),
+                        Maybe.some(207),
+                        Maybe.none(),
+                        Maybe.none(),
+                        List.of(new MultiStatusResponseElement(URI.create("/resource"), 423)));
 
         final String json = mapper.writeValueAsString(detail);
         assertTrue(json.contains("\"multistatus\""));
@@ -135,15 +137,23 @@ class ProblemDetailJsonTest {
 
     @Test
     void multiStatusCarriesTheOperationalExtensions() throws Exception {
-        final StandardMultiStatusProblemDetail detail = new StandardMultiStatusProblemDetail(
-                URI.create("about:blank"),
-                Maybe.some("Multi-Status"),
-                Maybe.some(207),
-                Maybe.none(),
-                Maybe.none(),
-                List.of(new MultiStatusResponseElement(URI.create("/resource"), 423)))
-                .withExtensions(Maybe.some("corr-1"), Maybe.some("trace-1"),
-                        Maybe.some("req-1"), Maybe.some("tenant-1"), true, Maybe.of(3L));
+        final StandardMultiStatusProblemDetail detail =
+                new StandardMultiStatusProblemDetail(
+                                URI.create("about:blank"),
+                                Maybe.some("Multi-Status"),
+                                Maybe.some(207),
+                                Maybe.none(),
+                                Maybe.none(),
+                                List.of(
+                                        new MultiStatusResponseElement(
+                                                URI.create("/resource"), 423)))
+                        .withExtensions(
+                                Maybe.some("corr-1"),
+                                Maybe.some("trace-1"),
+                                Maybe.some("req-1"),
+                                Maybe.some("tenant-1"),
+                                true,
+                                Maybe.of(3L));
 
         final String json = mapper.writeValueAsString(detail);
         assertTrue(json.contains("\"correlationId\":\"corr-1\""), json);
@@ -160,18 +170,19 @@ class ProblemDetailJsonTest {
         assertEquals(3L, parsed.getRetryAfterSeconds().orNull());
         assertEquals(1, parsed.getResponses().size());
 
-        final StandardMultiStatusProblemDetail localized = parsed.localized(java.util.Locale.GERMAN);
+        final StandardMultiStatusProblemDetail localized =
+                parsed.localized(java.util.Locale.GERMAN);
         assertEquals(1, localized.getResponses().size());
         assertEquals("corr-1", localized.getCorrelationId().orNull());
-        assertEquals(HttpStatusMessages.title(207, java.util.Locale.GERMAN),
-                localized.getTitle());
+        assertEquals(HttpStatusMessages.title(207, java.util.Locale.GERMAN), localized.getTitle());
     }
 
     @Test
     void multiStatusResponseIgnoresPropstatExtensions() throws Exception {
-        final MultiStatusResponseElement response = mapper.readValue(
-                "{\"href\":\"/resource\",\"propstat\":{\"status\":\"HTTP/1.1 200 OK\"}}",
-                MultiStatusResponseElement.class);
+        final MultiStatusResponseElement response =
+                mapper.readValue(
+                        "{\"href\":\"/resource\",\"propstat\":{\"status\":\"HTTP/1.1 200 OK\"}}",
+                        MultiStatusResponseElement.class);
         assertEquals(URI.create("/resource"), response.href());
     }
 }

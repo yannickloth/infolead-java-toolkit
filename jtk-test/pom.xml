@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>eu.infolead.jtk</groupId>
+		<artifactId>jtk-parent</artifactId>
+		<relativePath>../jtk-parent</relativePath>
+		<version>${revision}</version>
+	</parent>
+	<artifactId>jtk-test</artifactId>
+
+	<name>Infolead Java Toolkit - Test</name>
+	<description>Test support library: AssertJ assertions for jtk types, deterministic
+		anomaly fixtures, jqwik arbitraries, serialization round-trip helpers and
+		the toolkit's own law conformance suite. Consumers MUST declare this
+		artifact with test scope.</description>
+	<dependencies>
+		<dependency>
+			<groupId>eu.infolead.jtk</groupId>
+			<artifactId>jtk-lang</artifactId>
+		</dependency>
+		<!-- AssertJ and jqwik are the public API of this module: the assertion
+		     classes extend AssertJ base types and the arbitraries produce jqwik
+		     generators, so both must be compile scope to flow into the
+		     consumer's test classpath. -->
+		<dependency>
+			<groupId>org.assertj</groupId>
+			<artifactId>assertj-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.jqwik</groupId>
+			<artifactId>jqwik</artifactId>
+		</dependency>
+		<!-- Only used by the Jackson round-trip helpers. Compile scope on
+		     purpose: jtk-test is a test-scope artifact, so Jackson reaches the
+		     consumer's test classpath but never its runtime classpath. -->
+		<dependency>
+			<groupId>tools.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>${jackson3.version}</version>
+		</dependency>
+	</dependencies>
+</project>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>eu.infolead.jtk</groupId>
+		<artifactId>jtk-parent</artifactId>
+		<relativePath>../jtk-parent</relativePath>
+		<version>${revision}</version>
+	</parent>
+	<artifactId>jtk-jackson3</artifactId>
+
+	<name>Infolead Java Toolkit - Jackson 3</name>
+	<description>Jackson 3 integration: the mechanics that annotations cannot express.
+		Depends on jtk-lang only; no framework dependency.</description>
+
+	<dependencies>
+		<dependency>
+			<groupId>eu.infolead.jtk</groupId>
+			<artifactId>jtk-lang</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>tools.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>${jackson3.version}</version>
+		</dependency>
+	</dependencies>
+</project>

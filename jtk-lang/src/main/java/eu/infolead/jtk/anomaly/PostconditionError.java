@@ -1,40 +1,43 @@
 package eu.infolead.jtk.anomaly;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import eu.infolead.jtk.fp.either.Maybe;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Objects;
 
-import eu.infolead.jtk.fp.either.Maybe;
-
 /**
- * Represents postcondition errors - system failed to achieve expected state
- * after an operation. These typically map to HTTP 5xx status codes (server
- * errors) as the system did not work correctly to reach the expected state.
+ * Represents postcondition errors - system failed to achieve expected state after an operation.
+ * These typically map to HTTP 5xx status codes (server errors) as the system did not work correctly
+ * to reach the expected state.
  *
- * @param condition   the postcondition that was violated
- * @param errorType   the specific postcondition error type
+ * @param condition the postcondition that was violated
+ * @param errorType the specific postcondition error type
  * @param contextArgs additional arguments for error message formatting
- * @param actualValue the actual system state that violated the postcondition
- *                    (optional)
- * @param errorId     unique identifier for this error instance (optional)
+ * @param actualValue the actual system state that violated the postcondition (optional)
+ * @param errorId unique identifier for this error instance (optional)
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record PostconditionError(
         String condition,
         PostconditionErrorType errorType,
         Object[] contextArgs,
         @JsonIgnore Maybe<Object> actualValue,
-        @JsonIgnore Maybe<String> errorId) implements SystemError {
+        @JsonIgnore Maybe<String> errorId)
+        implements SystemError {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Canonical constructor with validation.
      *
-     * @param condition   the postcondition that was violated
-     * @param errorType   the specific postcondition error type
+     * @param condition the postcondition that was violated
+     * @param errorType the specific postcondition error type
      * @param contextArgs additional arguments for message formatting
      * @param actualValue the actual system state, if available
-     * @param errorId     the unique error instance identifier, if assigned
+     * @param errorId the unique error instance identifier, if assigned
      */
     public PostconditionError {
         Objects.requireNonNull(condition, "condition cannot be null");
@@ -57,15 +60,17 @@ public record PostconditionError(
 
     /**
      * Convenience constructor with context args but no actual value or error ID.
-     * <p>
-     * Every argument is a message-format argument. Use the canonical constructor
-     * when the third argument is the rejected value itself.
      *
-     * @param condition   the postcondition that was violated
-     * @param errorType   the specific postcondition error type
+     * <p>Every argument is a message-format argument. Use the canonical constructor when the third
+     * argument is the rejected value itself.
+     *
+     * @param condition the postcondition that was violated
+     * @param errorType the specific postcondition error type
      * @param contextArgs arguments substituted into the message template
      */
-    public PostconditionError(final String condition, final PostconditionErrorType errorType,
+    public PostconditionError(
+            final String condition,
+            final PostconditionErrorType errorType,
             final Object... contextArgs) {
         this(condition, errorType, contextArgs, Maybe.none(), Maybe.none());
     }
@@ -78,10 +83,12 @@ public record PostconditionError(
      * @param actualValue the value that violated the postcondition
      * @return the postcondition error
      */
-    public static PostconditionError withActualValue(final String condition,
-            final PostconditionErrorType errorType, final Object actualValue) {
-        return new PostconditionError(condition, errorType, new Object[0],
-                Maybe.ofNullable(actualValue), Maybe.none());
+    public static PostconditionError withActualValue(
+            final String condition,
+            final PostconditionErrorType errorType,
+            final Object actualValue) {
+        return new PostconditionError(
+                condition, errorType, new Object[0], Maybe.ofNullable(actualValue), Maybe.none());
     }
 
     @Override
@@ -91,18 +98,14 @@ public record PostconditionError(
 
     @Override
     public String getMessage() {
-        return contextArgs.length == 0
-                ? condition
-                : condition + ": " + getTypeMessage();
+        return contextArgs.length == 0 ? condition : condition + ": " + getTypeMessage();
     }
 
     /**
-     * Returns the message with the error-type text localized for the requested
-     * language.
+     * Returns the message with the error-type text localized for the requested language.
      *
-     * <p>When no context arguments are present, the caller-supplied
-     * {@code condition} is the whole message and is returned untranslated;
-     * there is no error-type text to localize in that case.</p>
+     * <p>When no context arguments are present, the caller-supplied {@code condition} is the whole
+     * message and is returned untranslated; there is no error-type text to localize in that case.
      *
      * <pre>{@code
      * PostconditionError.expectedStateNotReached("READY", "BUSY")
@@ -150,13 +153,21 @@ public record PostconditionError(
         if (errorId.isPresent().toBoolean()) {
             return this;
         }
-        return new PostconditionError(condition, errorType, contextArgs, actualValue,
+        return new PostconditionError(
+                condition,
+                errorType,
+                contextArgs,
+                actualValue,
                 Maybe.some(errorType.generateErrorId()));
     }
 
     @Override
     public SystemError withErrorId(final String customErrorId) {
-        return new PostconditionError(condition, errorType, contextArgs, actualValue,
+        return new PostconditionError(
+                condition,
+                errorType,
+                contextArgs,
+                actualValue,
                 Maybe.some(Objects.requireNonNull(customErrorId, "customErrorId")));
     }
 
@@ -183,11 +194,42 @@ public record PostconditionError(
 
     @Override
     public String toString() {
-        return "PostconditionError[condition=" + condition
-                + ", errorType=" + errorType
-                + ", contextArgs=" + SystemError.renderValue(contextArgs)
-                + ", actualValue=" + actualValue.fold(() -> "none", SystemError::renderValue)
-                + ", errorId=" + errorId + "]";
+        return "PostconditionError[condition="
+                + condition
+                + ", errorType="
+                + errorType
+                + ", contextArgs="
+                + SystemError.renderValue(contextArgs)
+                + ", actualValue="
+                + actualValue.fold(() -> "none", SystemError::renderValue)
+                + ", errorId="
+                + errorId
+                + "]";
+    }
+
+    /**
+     * Restores the record from its JSON representation.
+     *
+     * <p>The operational members ({@code actualValue}, {@code errorId}) are not part of the wire
+     * contract and are restored as {@link Maybe#none()}. They are reattached by the application
+     * when an error crosses a process boundary.
+     *
+     * @param condition the postcondition that was violated
+     * @param errorType the error type
+     * @param contextArgs the message-format arguments
+     * @return the restored error
+     */
+    @JsonCreator
+    public static PostconditionError fromJson(
+            @JsonProperty("condition") final String condition,
+            @JsonProperty("errorType") final PostconditionErrorType errorType,
+            @JsonProperty("contextArgs") final Object[] contextArgs) {
+        return new PostconditionError(
+                condition,
+                errorType,
+                contextArgs == null ? new Object[0] : contextArgs,
+                Maybe.none(),
+                Maybe.none());
     }
 
     // Factory methods for common postcondition errors
@@ -196,13 +238,17 @@ public record PostconditionError(
      * Creates a postcondition error for when expected state was not reached.
      *
      * @param expectedState the state that was expected
-     * @param actualState   the state that was observed
+     * @param actualState the state that was observed
      * @return the postcondition error
      */
-    public static PostconditionError expectedStateNotReached(final String expectedState, final Object actualState) {
-        return new PostconditionError("Expected state not reached",
+    public static PostconditionError expectedStateNotReached(
+            final String expectedState, final Object actualState) {
+        return new PostconditionError(
+                "Expected state not reached",
                 PostconditionErrorType.EXPECTED_STATE_NOT_REACHED,
-                new Object[] { expectedState }, Maybe.ofNullable(actualState), Maybe.none());
+                new Object[] {expectedState},
+                Maybe.ofNullable(actualState),
+                Maybe.none());
     }
 
     /**
@@ -212,9 +258,12 @@ public record PostconditionError(
      * @return the postcondition error
      */
     public static PostconditionError invariantViolated(final String invariantDescription) {
-        return new PostconditionError("Invariant violated",
+        return new PostconditionError(
+                "Invariant violated",
                 PostconditionErrorType.INVARIANT_VIOLATED,
-                new Object[] { invariantDescription }, Maybe.none(), Maybe.none());
+                new Object[] {invariantDescription},
+                Maybe.none(),
+                Maybe.none());
     }
 
     /**
@@ -224,35 +273,46 @@ public record PostconditionError(
      * @return the postcondition error
      */
     public static PostconditionError sideEffectFailed(final String sideEffectDescription) {
-        return new PostconditionError("Side effect failed",
+        return new PostconditionError(
+                "Side effect failed",
                 PostconditionErrorType.SIDE_EFFECT_FAILED,
-                new Object[] { sideEffectDescription }, Maybe.none(), Maybe.none());
+                new Object[] {sideEffectDescription},
+                Maybe.none(),
+                Maybe.none());
     }
 
     /**
      * Creates a postcondition error for when data persistence failed.
      *
      * @param entityType the entity type
-     * @param entityId   the entity identifier
+     * @param entityId the entity identifier
      * @return the postcondition error
      */
-    public static PostconditionError persistenceFailed(final String entityType, final Object entityId) {
-        return new PostconditionError("Persistence failed",
+    public static PostconditionError persistenceFailed(
+            final String entityType, final Object entityId) {
+        return new PostconditionError(
+                "Persistence failed",
                 PostconditionErrorType.PERSISTENCE_FAILED,
-                new Object[] { entityType, entityId }, Maybe.none(), Maybe.none());
+                new Object[] {entityType, entityId},
+                Maybe.none(),
+                Maybe.none());
     }
 
     /**
      * Creates a postcondition error for when notification delivery failed.
      *
      * @param notificationType the notification type
-     * @param recipient        the intended recipient
+     * @param recipient the intended recipient
      * @return the postcondition error
      */
-    public static PostconditionError notificationFailed(final String notificationType, final String recipient) {
-        return new PostconditionError("Notification failed",
+    public static PostconditionError notificationFailed(
+            final String notificationType, final String recipient) {
+        return new PostconditionError(
+                "Notification failed",
                 PostconditionErrorType.NOTIFICATION_FAILED,
-                new Object[] { notificationType, recipient }, Maybe.none(), Maybe.none());
+                new Object[] {notificationType, recipient},
+                Maybe.none(),
+                Maybe.none());
     }
 
     /**
@@ -262,21 +322,75 @@ public record PostconditionError(
      * @return the postcondition error
      */
     public static PostconditionError consistencyViolated(final String consistencyRule) {
-        return new PostconditionError("Data consistency violated",
+        return new PostconditionError(
+                "Data consistency violated",
                 PostconditionErrorType.CONSISTENCY_VIOLATED,
-                new Object[] { consistencyRule }, Maybe.none(), Maybe.none());
+                new Object[] {consistencyRule},
+                Maybe.none(),
+                Maybe.none());
     }
 
     /**
      * Creates a postcondition error for when external system integration failed.
      *
      * @param externalSystem the external system
-     * @param operation      the failed operation
+     * @param operation the failed operation
      * @return the postcondition error
      */
-    public static PostconditionError integrationFailed(final String externalSystem, final String operation) {
-        return new PostconditionError("External integration failed",
+    public static PostconditionError integrationFailed(
+            final String externalSystem, final String operation) {
+        return new PostconditionError(
+                "External integration failed",
                 PostconditionErrorType.INTEGRATION_FAILED,
-                new Object[] { externalSystem, operation }, Maybe.none(), Maybe.none());
+                new Object[] {externalSystem, operation},
+                Maybe.none(),
+                Maybe.none());
+    }
+
+    /**
+     * Creates a postcondition error for an asynchronous operation that exceeded its deadline.
+     *
+     * @param operation the operation that timed out
+     * @return the postcondition error
+     */
+    public static PostconditionError operationTimedOut(final String operation) {
+        return new PostconditionError(
+                "Deadline exceeded",
+                PostconditionErrorType.OPERATION_TIMED_OUT,
+                new Object[] {operation},
+                Maybe.none(),
+                Maybe.none());
+    }
+
+    /**
+     * Creates a postcondition error for an asynchronous operation that was cancelled before it
+     * completed.
+     *
+     * @param operation the cancelled operation
+     * @return the postcondition error
+     */
+    public static PostconditionError operationCancelled(final String operation) {
+        return new PostconditionError(
+                "Operation cancelled",
+                PostconditionErrorType.OPERATION_CANCELLED,
+                new Object[] {operation},
+                Maybe.none(),
+                Maybe.none());
+    }
+
+    /**
+     * Creates a postcondition error for an asynchronous operation that failed for an
+     * implementation-specific reason.
+     *
+     * @param detail a description of what failed
+     * @return the postcondition error
+     */
+    public static PostconditionError asyncOperationFailed(final String detail) {
+        return new PostconditionError(
+                "Asynchronous operation failed",
+                PostconditionErrorType.ASYNC_OPERATION_FAILED,
+                new Object[] {detail},
+                Maybe.none(),
+                Maybe.none());
     }
 }

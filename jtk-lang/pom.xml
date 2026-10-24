@@ -4,15 +4,15 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>eu.infolead.javatoolkit</groupId>
+		<groupId>eu.infolead.jtk</groupId>
 		<artifactId>jtk-parent</artifactId>
 		<relativePath>../jtk-parent</relativePath>
-		<version>0.0.1</version>
+		<version>${revision}</version>
 	</parent>
 	<artifactId>jtk-lang</artifactId>
 
-	<name>Infolead Java toolkit - Lang</name>
-	<description>Infolead Java toolkit - Language extension module. Contains functional programming types.</description>
+	<name>Infolead Java Toolkit - Language</name>
+	<description>Core language extensions and functional programming utilities</description>
 	<dependencies>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
@@ -23,8 +23,9 @@
 			<artifactId>jakarta.annotation-api</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
+			<groupId>tools.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
+			<version>${jackson3.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
