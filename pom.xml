@@ -67,7 +67,7 @@
 		<google.java.format.version>1.22.0</google.java.format.version>
 		<jacoco.maven.plugin.version>0.8.12</jacoco.maven.plugin.version>
 		<maven.source.plugin.version>3.3.1</maven.source.plugin.version>
-		<maven.javadoc.plugin.version>3.10.0</maven.javadoc.plugin.version>
+		<maven.javadoc.plugin.version>3.12.0</maven.javadoc.plugin.version>
 		<maven.gpg.plugin.version>3.2.7</maven.gpg.plugin.version>
 		<central.publishing.plugin.version>0.6.0</central.publishing.plugin.version>
 		<japicmp.maven.plugin.version>0.21.1</japicmp.maven.plugin.version>
