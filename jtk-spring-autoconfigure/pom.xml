@@ -17,7 +17,7 @@
 		framework; core and Jackson modules stay framework-free.</description>
 
 	<properties>
-		<spring-boot.version>4.0.0</spring-boot.version>
+		<spring-boot.version>4.1.1</spring-boot.version>
 	</properties>
 
 	<dependencyManagement>
