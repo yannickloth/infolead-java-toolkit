@@ -15,7 +15,8 @@ import eu.infolead.jtk.fp.either.Maybe;
  * and HTTP status mapping.
  *
  * @param fieldPath     the path to the field that failed validation (e.g.,
- *                      "user.email", "items[0].name")
+ *                      "user.email", "items[0].name"); an empty path denotes
+ *                      the whole object, as used by cross-field invariants
  * @param errorType     the type of error that occurred (enum implementing
  *                      ErrorType)
  * @param contextArgs   additional arguments for error message formatting
@@ -31,10 +32,20 @@ public record ValidationError(
 
     /**
      * Canonical constructor with validation. The context array is copied so that
-     * later modifications by the caller cannot change this error.
+     * later modifications by the caller cannot change this error, and the field
+     * path is parsed so that malformed paths fail fast.
+     *
+     * @param fieldPath     the path to the failed field; blank for the object
+     * @param errorType     the type of error
+     * @param contextArgs   arguments for message formatting
+     * @param rejectedValue the rejected value, if any
+     * @param errorId       the error identifier, if any
+     * @throws IllegalArgumentException if the field path is malformed
      */
     public ValidationError {
         Objects.requireNonNull(fieldPath, "fieldPath cannot be null");
+        // Fail fast on malformed paths: nested-path operations rely on parsing.
+        FieldPath.parse(fieldPath);
         Objects.requireNonNull(errorType, "errorType cannot be null");
         Objects.requireNonNull(contextArgs, "contextArgs cannot be null");
         Objects.requireNonNull(rejectedValue, "rejectedValue cannot be null");
@@ -73,6 +84,99 @@ public record ValidationError(
      */
     public ValidationError(final String fieldPath, final ErrorType errorType, final Object... contextArgs) {
         this(fieldPath, errorType, contextArgs, Maybe.none(), Maybe.none());
+    }
+
+    /**
+     * Returns the parsed field path.
+     *
+     * <pre>{@code
+     * new ValidationError("items[0].price", StandardErrorType.OUT_OF_RANGE).path();
+     * // FieldPath with segments ["items", "[0]", "price"]
+     * }</pre>
+     *
+     * @return the parsed path, never {@code null}
+     */
+    public FieldPath path() {
+        return FieldPath.parse(fieldPath);
+    }
+
+    /**
+     * Indicates whether the error refers to a nested field.
+     *
+     * <pre>{@code
+     * ValidationError.required("user").isNested();        // false
+     * ValidationError.required("user.address").isNested(); // true
+     * }</pre>
+     *
+     * @return {@code true} when the path has more than one segment
+     */
+    public boolean isNested() {
+        return path().size() > 1;
+    }
+
+    /**
+     * Returns a copy of this error nested under a prefix path.
+     *
+     * <p>The merge is idempotent: an error that already starts with the prefix
+     * is returned unchanged.</p>
+     *
+     * <pre>{@code
+     * ValidationError.required("city").under("user.address");
+     * // field path "user.address.city"
+     * ValidationError.required("user.name").under("user");
+     * // field path "user.name" (unchanged)
+     * }</pre>
+     *
+     * @param prefix the prefix path
+     * @return a nested error, or this error when already nested
+     */
+    public ValidationError under(final String prefix) {
+        return under(FieldPath.parse(prefix));
+    }
+
+    /**
+     * Returns a copy of this error nested under a prefix path.
+     *
+     * @param prefix the prefix path
+     * @return a nested error, or this error when already nested
+     */
+    public ValidationError under(final FieldPath prefix) {
+        Objects.requireNonNull(prefix, "prefix");
+        final FieldPath merged = path().prefixed(prefix);
+        return merged.toString().equals(fieldPath) ? this : withFieldPath(merged.toString());
+    }
+
+    /**
+     * Returns a copy of this error located at another field path.
+     *
+     * @param newFieldPath the replacement path
+     * @return a copy with the given path
+     */
+    public ValidationError withFieldPath(final String newFieldPath) {
+        return new ValidationError(newFieldPath, errorType, contextArgs, rejectedValue, errorId);
+    }
+
+    /**
+     * Creates a cross-field invariant error.
+     *
+     * <p>Use an empty {@code fieldPath} for constraints that concern the whole
+     * object rather than one field; the formatted message then omits the
+     * field prefix.</p>
+     *
+     * <pre>{@code
+     * ValidationError.crossField("", "start must be before end");
+     * ValidationError.crossField("period", "start must be before end");
+     * }</pre>
+     *
+     * @param fieldPath   the field or synthetic constraint path
+     * @param description the human-readable constraint description
+     * @return a validation error typed as
+     *         {@link StandardErrorType#CROSS_FIELD_VIOLATION}
+     */
+    public static ValidationError crossField(final String fieldPath, final String description) {
+        return new ValidationError(fieldPath, StandardErrorType.CROSS_FIELD_VIOLATION,
+                new Object[] { Objects.requireNonNull(description, "description") },
+                Maybe.none(), Maybe.none());
     }
 
     /**
@@ -295,7 +399,9 @@ public record ValidationError(
      * @return a ProblemDetail representing this error
      */
     public ProblemDetail toProblemDetail() {
-        final String detail = fieldPath + ": " + getMessage();
+        final String detail = fieldPath.isBlank()
+                ? getMessage()
+                : fieldPath + ": " + getMessage();
         return errorType.toProblemDetail(detail);
     }
 
@@ -310,9 +416,10 @@ public record ValidationError(
      * @return formatted error description without the rejected value
      */
     public String format() {
+        final String location = fieldPath.isBlank() ? "" : fieldPath + ": ";
         return errorId.fold(
-                () -> String.format("[%s] %s: %s", getErrorCode(), fieldPath, getMessage()),
-                id -> String.format("[%s|%s] %s: %s", getErrorCode(), id, fieldPath, getMessage()));
+                () -> String.format("[%s] %s%s", getErrorCode(), location, getMessage()),
+                id -> String.format("[%s|%s] %s%s", getErrorCode(), id, location, getMessage()));
     }
 
     /**

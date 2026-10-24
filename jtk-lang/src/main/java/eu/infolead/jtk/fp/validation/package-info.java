@@ -65,6 +65,73 @@
  *     .result();
  * }</pre>
  * 
+ * <h3>Applicative Validation (Accumulating)</h3>
+ * <p>{@link eu.infolead.jtk.fp.either.Validation} short-circuits when used as a
+ * monad ({@code flatMap} stops at the first invalid value). The applicative
+ * combinators evaluate every operand and accumulate all errors into a
+ * {@link eu.infolead.jtk.fp.validation.ValidationResult}:</p>
+ * <pre>{@code
+ * ValidationResult<Registration> result = Validation.zip(
+ *         Validation.required("email", email),
+ *         Validation.lengthBetween("name", name, 2, 50),
+ *         Registration::new);
+ *
+ * if (result.isFailure()) {
+ *     // every problem, not just the first one
+ *     List<ValidationError> errors = result.getErrors();
+ * }
+ * }</pre>
+ * <p>{@code Validation.combine(...)} is an alias for {@code zip}, and
+ * {@code Validation.and(...)} keeps the left value when both operands are valid.
+ * The generic instance methods
+ * {@link eu.infolead.jtk.fp.either.Validation#zip(eu.infolead.jtk.fp.either.Validation, java.util.function.BiFunction)}
+ * and
+ * {@link eu.infolead.jtk.fp.either.Validation#and(eu.infolead.jtk.fp.either.Validation)}
+ * accumulate any invalid type into a {@code Validation<List<I>, R>}.</p>
+ *
+ * <h3>Interop with the Railway</h3>
+ * <p>The two worlds compose in both directions:</p>
+ * <pre>{@code
+ * // Validation -> ValidationResult
+ * ValidationResult<User> result = ValidationResult.from(validation, error -> error);
+ *
+ * // ValidationResult -> either railway form
+ * Validation<ValidationError, User> validation = result.toValidation(); // first error
+ * Result<ValidationError, User> railway = result.toResult();            // first error
+ * }</pre>
+ *
+ * <h3>Nested Field Paths</h3>
+ * <p>{@link eu.infolead.jtk.fp.validation.FieldPath} parses dotted and indexed
+ * paths, and {@link eu.infolead.jtk.fp.validation.ValidationError#under(String)}
+ * re-nests an error without duplicating the prefix:</p>
+ * <pre>{@code
+ * ValidationError required = ValidationError.required("city").under("user.address");
+ * required.fieldPath(); // "user.address.city"
+ * required.path().segments(); // ["user", "address", "city"]
+ *
+ * FieldPath.parse("items[0].price").segments(); // ["items", "[0]", "price"]
+ * }</pre>
+ *
+ * <h3>Cross-Field Invariants</h3>
+ * <p>Constraints that span several fields belong to the object, not to any one
+ * field. {@code ObjectValidator.invariant(...)} evaluates them against the whole
+ * object and accumulates the failure with the field errors:</p>
+ * <pre>{@code
+ * ValidationResult<Booking> result = Validator.object(booking)
+ *         .validateAndAccumulate(Booking::start,
+ *                 start -> Validator.<LocalDate>field("start").required(start))
+ *         .validateAndAccumulate(Booking::end,
+ *                 end -> Validator.<LocalDate>field("end").required(end))
+ *         .invariant("period",
+ *                 value -> value.start() != null && value.start().isBefore(value.end()),
+ *                 "start must be before end")
+ *         .result();
+ * }</pre>
+ * <p>Invariant failures use
+ * {@link eu.infolead.jtk.anomaly.StandardErrorType#CROSS_FIELD_VIOLATION} (HTTP
+ * 400). An empty path attaches the error to the whole object and omits the field
+ * prefix from the formatted message.</p>
+ *
  * <h3>Error ID Tracking</h3>
  * <pre>{@code
  * ValidationError error = ValidationError.required("field")

@@ -81,6 +81,15 @@ public enum StandardErrorType implements ErrorType {
         ErrorCategory.VALIDATION
     ),
 
+    CROSS_FIELD_VIOLATION(
+        1007,
+        "CROSS_FIELD_VIOLATION",
+        "Fields violate a cross-field constraint: %s",
+            HttpStatus.BAD_REQUEST.code(),
+        "Bad Request - Cross-Field Violation",
+        ErrorCategory.VALIDATION
+    ),
+
     // Resource Errors
     /** A requested resource was not found. */
     NOT_FOUND(
@@ -288,8 +297,9 @@ public enum StandardErrorType implements ErrorType {
                  INVARIANT_VIOLATION, NULL_POINTER_VIOLATION -> ErrorSeverity.CRITICAL;
             case INTERNAL_ERROR, SERVICE_UNAVAILABLE, TIMEOUT -> ErrorSeverity.ERROR;
             case REQUIRED, INVALID_FORMAT, TOO_LONG, TOO_SHORT,
-                 OUT_OF_RANGE, INVALID_EMAIL, NOT_FOUND, ALREADY_EXISTS, UNAUTHORIZED, FORBIDDEN,
-                 TOO_MANY_REQUESTS, BUSINESS_RULE_VIOLATION, INSUFFICIENT_FUNDS -> ErrorSeverity.WARNING;
+                 OUT_OF_RANGE, INVALID_EMAIL, CROSS_FIELD_VIOLATION, NOT_FOUND, ALREADY_EXISTS,
+                 UNAUTHORIZED, FORBIDDEN, TOO_MANY_REQUESTS, BUSINESS_RULE_VIOLATION,
+                 INSUFFICIENT_FUNDS -> ErrorSeverity.WARNING;
         };
     }
 }

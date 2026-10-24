@@ -218,6 +218,59 @@ public final class Validator {
         }
 
         /**
+         * Checks a cross-field invariant of the whole object, accumulating the
+         * failure with any errors found so far.
+         *
+         * <p>The invariant is evaluated against the original object even when
+         * earlier field validations failed, so a response can report every
+         * problem in one pass. The predicate must therefore tolerate fields
+         * that did not pass their own validation.</p>
+         *
+         * <pre>{@code
+         * ValidationResult<Booking> result = Validator.object(booking)
+         *         .validate(Booking::getStart, start -> Validator.field("start").required(start))
+         *         .validate(Booking::getEnd, end -> Validator.field("end").required(end))
+         *         .invariant("period",
+         *                 value -> value.getStart().isBefore(value.getEnd()),
+         *                 "start must be before end")
+         *         .result();
+         * }</pre>
+         *
+         * @param fieldPath   the field or synthetic constraint path; an empty
+         *                    string attaches the error to the whole object
+         * @param invariant   the cross-field predicate; {@code true} means valid
+         * @param description the human-readable constraint description
+         * @return this ObjectValidator for method chaining
+         */
+        public ObjectValidator<T> invariant(final String fieldPath, final Predicate<T> invariant,
+                final String description) {
+            Objects.requireNonNull(fieldPath, "fieldPath");
+            Objects.requireNonNull(invariant, "invariant");
+            Objects.requireNonNull(description, "description");
+            if (!invariant.test(object)) {
+                final ValidationResult<T> violation = ValidationResult.failure(
+                        ValidationError.crossField(fieldPath, description));
+                currentResult = currentResult.isSuccess().toBoolean()
+                        ? violation
+                        : currentResult.combine(violation, value -> ignored -> value);
+            }
+            return this;
+        }
+
+        /**
+         * Checks a cross-field invariant of the whole object, attaching the
+         * failure to the object itself.
+         *
+         * @param invariant   the cross-field predicate; {@code true} means valid
+         * @param description the human-readable constraint description
+         * @return this ObjectValidator for method chaining
+         * @see #invariant(String, Predicate, String)
+         */
+        public ObjectValidator<T> invariant(final Predicate<T> invariant, final String description) {
+            return invariant("", invariant, description);
+        }
+
+        /**
          * Returns the final validation result.
          *
          * @return the ValidationResult for the entire object
