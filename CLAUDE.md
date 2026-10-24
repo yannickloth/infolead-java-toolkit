@@ -60,6 +60,34 @@ mvn clean
 - Implement comprehensive JavaDoc with academic references where applicable
 - Maintain immutability and functional programming principles
 
+### Control Flow: `fold()` vs `if/else`
+
+`fold()` is the **expression** form of branching. It is not a replacement for `if/else`.
+
+- **Use `if/else` for statements**: guard clauses, early returns, throwing, logging,
+  mutation, and any other side effect. Idiomatic form for these types is
+  `if (bool.toBoolean()) { ... }`.
+- **Use `fold()` only when the result is a value** of type `R`, both arms are pure and
+  symmetric, and the arms read as self-describing method references:
+  `bool.fold(this::renderNone, this::renderValue)`.
+- **Use the ternary** (`cond ? a : b`) when both operands are already cheap values.
+  Java evaluates only the taken branch of a ternary, so `fold()` adds no laziness there
+  and costs two `Supplier`s plus an indirection.
+- **Never `fold()` to run statements.** An arm written as `() -> { doSideEffect(); return null; }`
+  is a sign the code wanted `if/else`.
+- **`ifTrue()`, `ifFalse()`, `ifNull()` and `apply(...)`** are intentional side-effect
+  APIs. Prefer `if/else` over them unless a fluent `Bool`/`NullableBool` chain is already
+  established in the surrounding code.
+- **Argument order is `fold(false, [null,] true)`.** Swapping the arms compiles and
+  silently inverts behaviour when both arms return the same type. This is a further
+  reason to prefer `if/else` for non-trivial arms.
+- **Do not wrap a primitive `boolean` in `Bool.of(cond)` purely to branch on it.** Use `if`.
+- For `NullableBool`, `fold(false, null, true)` is worth more than for `Bool`: the
+  three-valued case analysis has no total `if/else` equivalent, so `fold()` forces the
+  `NULL` arm to be handled.
+
+See `eu.infolead.jtk.logic.package-info` for the full guidance and examples.
+
 ### Module Dependencies
 - New modules should inherit from `jtk-parent`
 - All dependency versions managed through `jtk-dependencies` BOM
