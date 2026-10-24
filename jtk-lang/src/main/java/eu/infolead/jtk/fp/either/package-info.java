@@ -336,8 +336,36 @@
  * <tr><td>Fallback values</td><td>{@code or()}, {@code orElse()}</td><td>Provide defaults</td></tr>
  * <tr><td>Collection processing</td><td>{@code traverse()}</td><td>Process lists with error handling</td></tr>
  * <tr><td>Function conversion</td><td>{@code fromTry()}</td><td>Wrap exception-throwing code</td></tr>
+ * <tr><td>Throwing function lifting</td><td>{@code liftTry()}</td><td>Turn a throwing function into a railway switch</td></tr>
  * <tr><td>Final extraction</td><td>{@code fold()}</td><td>Get final result</td></tr>
  * </table>
+ * 
+ * <h2>Exception Boundaries</h2>
+ * 
+ * <p>{@code fromTry()} (on {@link Either} and {@link Result}) and {@code liftTry()} convert
+ * exception-throwing code into railway values at explicit boundaries. Their error-vs-exception
+ * policy is deliberate:</p>
+ * <ul>
+ *   <li><strong>Captured:</strong> {@code java.lang.Exception} instances — checked exceptions and
+ *       runtime exceptions alike — become left/failure values on the error track.</li>
+ *   <li><strong>Not captured:</strong> {@code java.lang.Error} instances (OutOfMemoryError,
+ *       StackOverflowError, LinkageError, ...) keep propagating. They signal JVM-level failures
+ *       from which the process cannot reliably continue, and turning them into values would let
+ *       the program resume in an undefined state. Handle them only at thread or process
+ *       boundaries.</li>
+ * </ul>
+ * 
+ * <p>The computations are passed as {@link eu.infolead.jtk.fp.CheckedSupplier},
+ * {@link eu.infolead.jtk.fp.CheckedFunction} and {@link eu.infolead.jtk.fp.CheckedRunnable}, so
+ * throwing lambdas and method references can be used without wrapping them in try/catch:</p>
+ * 
+ * <pre>{@code
+ * // Throws IOException, captured without any try/catch:
+ * Either<String, String> content = Either.fromTry(
+ *     ex -> "Cannot read config: " + ex.getMessage(),
+ *     () -> Files.readString(Path.of("config.properties"))
+ * );
+ * }</pre>
  * 
  * @see Either
  * @see eu.infolead.jtk.fp.validation.ValidationResult

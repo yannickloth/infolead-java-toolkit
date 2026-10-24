@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.io.IOException;
 
 import org.junit.jupiter.api.Test;
 
@@ -413,6 +414,67 @@ class RailwayOrientedProgrammingTest {
         
         assertTrue(result.isLeft().toBoolean());
         assertEquals("Error: Something went wrong", result.fold(e -> e, v -> null));
+    }
+
+    // ====================== EXCEPTION BOUNDARY TESTS ======================
+
+    @Test
+    void testFromTryCheckedException() {
+        // The computation declares a checked exception: no try/catch wrapping needed.
+        Either<String, Integer> result = Either.fromTry(
+            ex -> "IO error: " + ex.getMessage(),
+            () -> { throw new IOException("file missing"); }
+        );
+        
+        assertTrue(result.isLeft().toBoolean());
+        assertEquals("IO error: file missing", result.fold(e -> e, v -> null));
+    }
+
+    @Test
+    void testFromTryAcceptsThrowingMethodReferences() {
+        Either<String, String> result = Either.fromTry(
+            ex -> "Error: " + ex.getMessage(),
+            RailwayOrientedProgrammingTest::readConfig
+        );
+        
+        assertTrue(result.isLeft().toBoolean());
+        assertEquals("Error: config unavailable", result.fold(e -> e, v -> null));
+    }
+
+    private static String readConfig() throws IOException {
+        throw new IOException("config unavailable");
+    }
+
+    @Test
+    void testFromTryPropagatesErrors() {
+        // Error vs exception policy: JVM-level errors escape instead of becoming left values.
+        OutOfMemoryError outOfMemoryError = new OutOfMemoryError("jvm exhausted");
+
+        OutOfMemoryError thrown = assertThrows(OutOfMemoryError.class,
+            () -> Either.fromTry(ex -> "Error: " + ex.getMessage(), () -> { throw outOfMemoryError; }));
+
+        assertSame(outOfMemoryError, thrown);
+    }
+
+    @Test
+    void testLiftTryBuildsARailwaySwitch() {
+        Fn.FN1<Either<String, Integer>, String> parse = Either.liftTry(
+            ex -> "parse failed: " + ex.getMessage(),
+            value -> {
+                if ("NaN".equals(value)) {
+                    throw new IllegalArgumentException("no digits");
+                }
+                return Integer.parseInt(value);
+            }
+        );
+
+        Either<String, Integer> success = parse.apply("42");
+        assertTrue(success.isRight().toBoolean());
+        assertEquals(Integer.valueOf(42), success.orNull());
+
+        Either<String, Integer> failure = parse.apply("NaN");
+        assertTrue(failure.isLeft().toBoolean());
+        assertEquals("parse failed: no digits", failure.fold(e -> e, v -> null));
     }
 
     // ====================== LIFTING OPERATION TESTS ======================

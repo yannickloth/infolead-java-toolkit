@@ -8,6 +8,8 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import eu.infolead.jtk.fp.CheckedFunction;
+import eu.infolead.jtk.fp.CheckedSupplier;
 import eu.infolead.jtk.fp.Fn;
 import eu.infolead.jtk.fp.Mapper;
 import eu.infolead.jtk.fp.Provider;
@@ -488,20 +490,89 @@ public sealed interface Either<L, R> extends Foldable<L, R>, BiValuedConsumable<
     }
 
     /**
-     * Execute a computation that might throw an exception, converting to Either.
-     * 
+     * Executes a computation that might throw an exception, converting it to an
+     * either: the computation's value becomes a right instance, and a thrown
+     * exception becomes a left instance carrying the mapped error.
+     * <p>
+     * The computation is a {@link CheckedSupplier}, so lambdas and method
+     * references may declare checked exceptions; callers never wrap the
+     * computation in try/catch just to call this method. Unlike
+     * {@link Result#fromTry(Fn.FN1, CheckedSupplier)}, a computation returning
+     * {@code null} is accepted: it produces a right instance carrying
+     * {@code null}.
+     * <p>
+     * <strong>Error vs exception policy:</strong> only {@link Exception}
+     * instances are captured &mdash; checked exceptions and runtime exceptions
+     * alike. {@link Error} instances (such as {@link OutOfMemoryError},
+     * {@link StackOverflowError} or {@link LinkageError}) are deliberately not
+     * captured: they signal JVM-level failures from which the process cannot
+     * reliably continue, and converting them to left values would let the
+     * program resume in an undefined state. They propagate to the caller, as
+     * does any {@link Throwable} that is neither an {@link Exception} nor an
+     * {@link Error}.
+     *
+     * <p>Example &mdash; capture a checked exception without any try/catch:</p>
+     *
+     * <pre>{@code
+     * Either<String, String> content = Either.fromTry(
+     *     ex -> "Cannot read config: " + ex.getMessage(),
+     *     () -> Files.readString(Path.of("config.properties")));
+     * }</pre>
+     *
      * @param <L> the error type
      * @param <R> the success type
      * @param errorMapper function to convert exceptions to error values
      * @param computation the computation that might throw
      * @return Either.right with result, or Either.left with mapped exception
+     * @throws NullPointerException if {@code errorMapper} or {@code computation}
+     *                              is {@code null}
      */
-    static <L, R> Either<L, R> fromTry(final Fn.FN1<L, Exception> errorMapper, final Supplier<R> computation) {
+    static <L, R> Either<L, R> fromTry(final Fn.FN1<L, Exception> errorMapper, final CheckedSupplier<R> computation) {
+        Objects.requireNonNull(errorMapper, "errorMapper");
+        Objects.requireNonNull(computation, "computation");
+        final R value;
         try {
-            return Either.right(computation.get());
+            value = computation.get();
         } catch (Exception e) {
             return Either.left(errorMapper.apply(e));
         }
+        // Outside the try, mirroring Result.fromTry: any invariant a Right may
+        // gain must not be captured as a left value by this very boundary.
+        return Either.right(value);
+    }
+
+    /**
+     * Lifts a function that might throw an exception into a railway switch: the
+     * returned function applies the computation to its argument and wraps the
+     * outcome in an either, using the same error-vs-exception policy as
+     * {@link #fromTry}. A computation returning {@code null} produces a right
+     * instance carrying {@code null}, as in {@link #fromTry}.
+     *
+     * <p>Example &mdash; turn a throwing reader into a railway switch:</p>
+     *
+     * <pre>{@code
+     * Fn.FN1<Either<String, String>, Path> read = Either.liftTry(
+     *     ex -> "Cannot read: " + ex.getMessage(),
+     *     name -> Files.readString(Path.of(name)));
+     *
+     * Either<String, String> content = read.apply("config.properties");
+     * }</pre>
+     *
+     * @param <L> the error type
+     * @param <T> the input type
+     * @param <R> the success type
+     * @param errorMapper function to convert exceptions to error values
+     * @param computation the function that might throw
+     * @return a function producing Either.right with the result, or
+     *         Either.left with the mapped exception
+     * @throws NullPointerException if {@code errorMapper} or {@code computation}
+     *                              is {@code null}
+     */
+    static <L, T, R> Fn.FN1<Either<L, R>, T> liftTry(final Fn.FN1<L, Exception> errorMapper,
+            final CheckedFunction<T, R> computation) {
+        Objects.requireNonNull(errorMapper, "errorMapper");
+        Objects.requireNonNull(computation, "computation");
+        return value -> fromTry(errorMapper, () -> computation.apply(value));
     }
 
     /**
