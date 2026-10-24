@@ -1,5 +1,7 @@
 package eu.infolead.jtk.currency;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.OptionalInt;
@@ -22,7 +24,10 @@ public record Currency(
         String numericCode,
         String name,
         OptionalInt minorUnits,
-        boolean fund) {
+        boolean fund) implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     private static final Pattern ALPHABETIC_CODE = Pattern.compile("[A-Z]{3}");
     private static final Pattern NUMERIC_CODE = Pattern.compile("[0-9]{3}");
@@ -94,5 +99,56 @@ public record Currency(
      */
     public boolean isSpendable() {
         return !fund && minorUnits.isPresent() && !isTestCode() && !isMetal() && !isUnitOfAccount();
+    }
+
+    /**
+     * Returns a serializable proxy in place of this record. Needed because
+     * {@link OptionalInt} is not serializable; record serialization honors
+     * {@code writeReplace} even though it ignores {@code readObject} and
+     * {@code writeObject}.
+     *
+     * <p>Maintenance note: {@link SerializationProxy} must carry every record
+     * component. A component added to this record but omitted from the proxy
+     * compiles and then silently deserializes as {@code null}. Deserialization
+     * cannot bypass validation even so: the proxy rebuilds through the
+     * canonical constructor, so no separate {@code readObject} guard is
+     * required.</p>
+     *
+     * @return the serialization proxy
+     */
+    @Serial
+    private Object writeReplace() {
+        return new SerializationProxy(this);
+    }
+
+    /** Serializable stand-in carrying the currency definition; keep its
+     * fields in sync with the {@code Currency} record components. */
+    private static final class SerializationProxy implements Serializable {
+
+        @Serial
+        private static final long serialVersionUID = 1L;
+
+        private final String code;
+        private final String numericCode;
+        private final String name;
+        private final Integer minorUnits;
+        private final boolean fund;
+
+        SerializationProxy(final Currency target) {
+            this.code = target.code;
+            this.numericCode = target.numericCode;
+            this.name = target.name;
+            this.minorUnits = target.minorUnits.isPresent()
+                    ? target.minorUnits.getAsInt()
+                    : null;
+            this.fund = target.fund;
+        }
+
+        @Serial
+        private Object readResolve() {
+            return new Currency(code, numericCode, name,
+                    minorUnits == null ? OptionalInt.empty() : OptionalInt.of(minorUnits),
+                    fund);
+        }
     }
 }

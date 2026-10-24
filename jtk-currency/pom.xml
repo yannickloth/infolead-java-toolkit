@@ -13,4 +13,10 @@
 
 	<name>Infolead Java toolkit - Currency</name>
 	<description>Infolead Java toolkit - Currency module</description>
+	<dependencies>
+		<dependency>
+			<groupId>eu.infolead.javatoolkit</groupId>
+			<artifactId>jtk-lang</artifactId>
+		</dependency>
+	</dependencies>
 </project>
